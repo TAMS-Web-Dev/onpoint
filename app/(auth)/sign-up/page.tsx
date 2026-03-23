@@ -14,9 +14,9 @@ const SignUpSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
-  age: z.coerce
-    .number({ invalid_type_error: "Please enter a valid age." })
-    .int()
+  age: z
+    .number({ error: "Please enter a valid age." })
+    .int("Please enter a valid age.")
     .min(13, "You must be at least 13 years old to join.")
     .max(100, "Please enter a valid age."),
   postcode: z

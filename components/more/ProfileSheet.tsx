@@ -17,7 +17,7 @@ const ProfileSchema = z.object({
   bio: z.string().max(300, "Bio must be 300 characters or less"),
   location: z.string(),
   age: z
-    .number({ invalid_type_error: "Please enter a valid age." })
+    .number()
     .int("Please enter a whole number.")
     .min(13, "You must be at least 13 years old.")
     .max(100, "Please enter a valid age.")

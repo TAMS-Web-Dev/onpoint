@@ -16,8 +16,8 @@ const SignUpSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
   age: z.coerce
-    .number({ invalid_type_error: "Please enter a valid age." })
-    .int()
+    .number()
+    .int("Please enter a valid age.")
     .min(13, "You must be at least 13 years old to join.")
     .max(100, "Please enter a valid age."),
   postcode: z
@@ -35,7 +35,7 @@ export async function signIn(prevState: AuthState, formData: FormData): Promise<
 
   const result = SignInSchema.safeParse(raw);
   if (!result.success) {
-    return { error: result.error.errors[0].message };
+    return { error: result.error.issues[0].message };
   }
 
   const supabase = await createClient();
@@ -59,7 +59,7 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
 
   const result = SignUpSchema.safeParse(raw);
   if (!result.success) {
-    return { error: result.error.errors[0].message };
+    return { error: result.error.issues[0].message };
   }
 
   const { fullName, email, password, age, postcode } = result.data;
