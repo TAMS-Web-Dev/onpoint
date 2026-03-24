@@ -4,7 +4,8 @@ export type Profile = {
   email: string | null;
   avatar_url: string | null;
   streak_count: number;
-  age: number | null;
+  date_of_birth: string | null;
+  phone_number: string | null;
   postcode: string | null;
   bio: string | null;
   location: string | null;

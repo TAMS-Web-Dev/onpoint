@@ -15,11 +15,19 @@ const SignUpSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
-  age: z.coerce
-    .number()
-    .int("Please enter a valid age.")
-    .min(13, "You must be at least 13 years old to join.")
-    .max(100, "Please enter a valid age."),
+  dateOfBirth: z.string().refine((val) => {
+    const dob = new Date(val);
+    if (isNaN(dob.getTime())) return false;
+    const today = new Date();
+    const minAge = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
+    return dob <= minAge;
+  }, "You must be at least 13 years old to join."),
+  phoneNumber: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^(\+44|0)\d{9,10}$/.test(val.replace(/\s/g, "")), {
+      message: "Please enter a valid UK phone number.",
+    }),
   postcode: z
     .string()
     .min(5, "Please enter a valid postcode.")
@@ -53,7 +61,8 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
     fullName: formData.get("fullName") as string,
     email: formData.get("email") as string,
     password: formData.get("password") as string,
-    age: formData.get("age") as string,
+    dateOfBirth: formData.get("dateOfBirth") as string,
+    phoneNumber: (formData.get("phoneNumber") as string) || undefined,
     postcode: formData.get("postcode") as string,
   };
 
@@ -62,14 +71,19 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
     return { error: result.error.issues[0].message };
   }
 
-  const { fullName, email, password, age, postcode } = result.data;
+  const { fullName, email, password, dateOfBirth, phoneNumber, postcode } = result.data;
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name: fullName, age, postcode: postcode.toUpperCase().trim() },
+      data: {
+        full_name: fullName,
+        date_of_birth: dateOfBirth,
+        phone_number: phoneNumber ?? null,
+        postcode: postcode.toUpperCase().trim(),
+      },
     },
   });
 

@@ -1,53 +1,47 @@
-import { Quote } from 'lucide-react'
+import { Quote } from "lucide-react";
 
 interface Story {
-  name: string
-  role: string
-  quote: string
+  name: string;
+  role: string;
+  quote: string;
 }
 
 const STORIES: Story[] = [
   {
-    name: 'James Chen',
-    role: 'Tech Entrepreneur',
+    name: "James Chen",
+    role: "Tech Entrepreneur",
     quote:
-      'The focus groups I\u2019ve participated in through On Point have given me valuable insights and connections for my startup.',
+      "The focus groups I\u2019ve participated in through OnPoint have given me valuable insights and connections for my startup.",
   },
   {
-    name: 'Olivia Martinez',
-    role: 'Web Developer',
+    name: "Olivia Martinez",
+    role: "Web Developer",
     quote:
-      'On Point\u2019s community has been instrumental in helping me develop my skills and build my professional network.',
+      "OnPoint\u2019s community has been instrumental in helping me develop my skills and build my professional network.",
   },
   {
-    name: 'Maya Williams',
-    role: 'Graphic Designer',
-    quote:
-      'On Point helped me find my first freelance gig and connect with like-minded creatives in Birmingham.',
+    name: "Maya Williams",
+    role: "Graphic Designer",
+    quote: "OnPoint helped me find my first freelance gig and connect with like-minded creatives in Birmingham.",
   },
-]
+];
 
-const AVATAR_COLORS = ['bg-primary', 'bg-secondary', 'bg-primary']
+const AVATAR_COLORS = ["bg-primary", "bg-secondary", "bg-primary"];
 
 export default function SuccessStories() {
   return (
     <section className="bg-muted/40 py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 lg:px-8">
-
         {/* ── Section Header ── */}
         <div className="text-center">
           <div className="flex justify-center items-center gap-3 mb-4">
             <div className="h-px w-12 bg-primary flex-shrink-0" />
-            <span className="text-primary font-semibold text-sm tracking-widest uppercase">
-              Community
-            </span>
+            <span className="text-primary font-semibold text-sm tracking-widest uppercase">Community</span>
             <div className="h-px w-12 bg-primary flex-shrink-0" />
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-secondary">
-            Community Success Stories
-          </h2>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-secondary">Community Success Stories</h2>
           <p className="mt-3 text-foreground/60 text-base max-w-xl mx-auto">
-            See what our community members have accomplished through On Point.
+            See what our community members <br /> have accomplished through OnPoint.
           </p>
         </div>
 
@@ -62,9 +56,7 @@ export default function SuccessStories() {
               <Quote size={28} className="text-primary flex-shrink-0" />
 
               {/* Quote text */}
-              <p className="text-foreground/75 text-sm leading-relaxed italic flex-1">
-                &ldquo;{story.quote}&rdquo;
-              </p>
+              <p className="text-foreground/75 text-sm leading-relaxed italic flex-1">&ldquo;{story.quote}&rdquo;</p>
 
               {/* Author */}
               <div className="flex items-center gap-3 pt-4 border-t border-border">
@@ -74,19 +66,14 @@ export default function SuccessStories() {
                   {story.name[0]}
                 </div>
                 <div>
-                  <p className="text-secondary font-semibold text-sm leading-tight">
-                    {story.name}
-                  </p>
-                  <p className="text-foreground/50 text-xs mt-0.5">
-                    {story.role}
-                  </p>
+                  <p className="text-secondary font-semibold text-sm leading-tight">{story.name}</p>
+                  <p className="text-foreground/50 text-xs mt-0.5">{story.role}</p>
                 </div>
               </div>
             </div>
           ))}
         </div>
-
       </div>
     </section>
-  )
+  );
 }

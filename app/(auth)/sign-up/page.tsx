@@ -14,11 +14,19 @@ const SignUpSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
-  age: z
-    .number({ error: "Please enter a valid age." })
-    .int("Please enter a valid age.")
-    .min(13, "You must be at least 13 years old to join.")
-    .max(100, "Please enter a valid age."),
+  dateOfBirth: z.string().refine((val) => {
+    const dob = new Date(val);
+    if (isNaN(dob.getTime())) return false;
+    const today = new Date();
+    const minAge = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
+    return dob <= minAge;
+  }, "You must be at least 13 years old to join."),
+  phoneNumber: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^(\+44|0)\d{9,10}$/.test(val.replace(/\s/g, "")), {
+      message: "Please enter a valid UK phone number.",
+    }),
   postcode: z
     .string()
     .min(5, "Please enter a valid postcode.")
@@ -51,7 +59,8 @@ export default function SignUpPage() {
     formData.set("fullName", values.fullName);
     formData.set("email", values.email);
     formData.set("password", values.password);
-    formData.set("age", String(values.age));
+    formData.set("dateOfBirth", values.dateOfBirth);
+    if (values.phoneNumber) formData.set("phoneNumber", values.phoneNumber);
     formData.set("postcode", values.postcode);
     startTransition(() => dispatch(formData));
   }
@@ -98,23 +107,20 @@ export default function SignUpPage() {
             {errors.fullName && <p className="mt-1.5 text-xs text-red-500">{errors.fullName.message}</p>}
           </div>
 
-          {/* Age + Postcode — side by side */}
+          {/* Date of Birth + Postcode — side by side */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="age" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
-                Age
+              <label htmlFor="dateOfBirth" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
+                Date of Birth
               </label>
               <input
-                id="age"
-                type="number"
-                inputMode="numeric"
-                min={13}
-                max={100}
-                placeholder="e.g. 18"
-                {...register("age", { valueAsNumber: true })}
+                id="dateOfBirth"
+                type="date"
+                max={new Date(new Date().setFullYear(new Date().getFullYear() - 13)).toISOString().split("T")[0]}
+                {...register("dateOfBirth")}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
               />
-              {errors.age && <p className="mt-1.5 text-xs text-red-500">{errors.age.message}</p>}
+              {errors.dateOfBirth && <p className="mt-1.5 text-xs text-red-500">{errors.dateOfBirth.message}</p>}
             </div>
 
             <div>
@@ -131,6 +137,22 @@ export default function SignUpPage() {
               />
               {errors.postcode && <p className="mt-1.5 text-xs text-red-500">{errors.postcode.message}</p>}
             </div>
+          </div>
+
+          {/* Phone Number */}
+          <div>
+            <label htmlFor="phoneNumber" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
+              Phone Number <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              id="phoneNumber"
+              type="tel"
+              autoComplete="tel"
+              placeholder="e.g. 07700 900000"
+              {...register("phoneNumber")}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
+            />
+            {errors.phoneNumber && <p className="mt-1.5 text-xs text-red-500">{errors.phoneNumber.message}</p>}
           </div>
 
           {/* Email */}

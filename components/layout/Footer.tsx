@@ -51,7 +51,7 @@ export default function Footer() {
               <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-extrabold text-xs tracking-tight">OP</span>
               </div>
-              <span className="text-white font-bold text-lg">On Point</span>
+              <span className="text-white font-bold text-lg">OnPoint</span>
             </div>
             <p className="text-white/55 text-sm leading-relaxed max-w-xs">
               Connecting young creatives in the West Midlands with opportunities, events, and each other.
@@ -67,7 +67,7 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="text-white/50 hover:text-primary transition-colors duration-200"
                 >
-                  <Icon size={18} />
+                  <Icon size={18} className="text-primary" />
                 </a>
               ))}
             </div>
@@ -134,7 +134,7 @@ export default function Footer() {
       {/* ── Bottom Bar ── */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-5 text-center">
-          <p className="text-white/40 text-xs">© 2026 On Point. All rights reserved.</p>
+          <p className="text-white/40 text-xs">© 2026 OnPoint. All rights reserved.</p>
         </div>
       </div>
     </footer>

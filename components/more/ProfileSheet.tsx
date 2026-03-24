@@ -16,13 +16,7 @@ const ProfileSchema = z.object({
   full_name: z.string().min(1, "Name is required"),
   bio: z.string().max(300, "Bio must be 300 characters or less"),
   location: z.string(),
-  age: z
-    .number()
-    .int("Please enter a whole number.")
-    .min(13, "You must be at least 13 years old.")
-    .max(100, "Please enter a valid age.")
-    .nullable()
-    .optional(),
+  date_of_birth: z.string().nullable().optional(),
   interests: z.array(z.string()),
 });
 
@@ -50,7 +44,7 @@ export function ProfileSheet({ open, onClose, profile, onSave, isPending }: Prof
       full_name: profile.full_name ?? "",
       bio: profile.bio ?? "",
       location: profile.location ?? "",
-      age: profile.age ?? undefined,
+      date_of_birth: profile.date_of_birth ?? undefined,
       interests: profile.interests ?? [],
     },
   });
@@ -61,7 +55,7 @@ export function ProfileSheet({ open, onClose, profile, onSave, isPending }: Prof
         full_name: profile.full_name ?? "",
         bio: profile.bio ?? "",
         location: profile.location ?? "",
-        age: profile.age ?? undefined,
+        date_of_birth: profile.date_of_birth ?? undefined,
         interests: profile.interests ?? [],
       });
     }
@@ -74,7 +68,7 @@ export function ProfileSheet({ open, onClose, profile, onSave, isPending }: Prof
       full_name: values.full_name,
       bio: values.bio || null,
       location: values.location || null,
-      age: values.age ?? null,
+      date_of_birth: values.date_of_birth ?? null,
       interests: values.interests,
     });
   }
@@ -124,24 +118,18 @@ export function ProfileSheet({ open, onClose, profile, onSave, isPending }: Prof
               />
             </div>
 
-            {/* Age */}
+            {/* Date of Birth */}
             <div>
-              <label htmlFor="age" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
-                Age
+              <label htmlFor="date_of_birth" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
+                Date of Birth
               </label>
               <input
-                id="age"
-                type="number"
-                inputMode="numeric"
-                min={13}
-                max={100}
-                placeholder="e.g. 18"
-                {...register("age", {
-                  setValueAs: (v) => (v === "" || v === null || v === undefined ? null : Number(v)),
-                })}
+                id="date_of_birth"
+                type="date"
+                {...register("date_of_birth")}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
               />
-              {errors.age && <p className="mt-1.5 text-xs text-red-500">{errors.age.message}</p>}
+              {errors.date_of_birth && <p className="mt-1.5 text-xs text-red-500">{errors.date_of_birth.message}</p>}
             </div>
 
             {/* Bio */}
