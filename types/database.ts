@@ -14,6 +14,8 @@ export type Profile = {
   high_contrast: boolean;
   email_notifications: boolean;
   push_notifications: boolean;
+  next_of_kin_name: string | null;
+  next_of_kin_contact: string | null;
   updated_at?: string;
 };
 

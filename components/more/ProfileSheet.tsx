@@ -18,6 +18,8 @@ const ProfileSchema = z.object({
   location: z.string(),
   date_of_birth: z.string().nullable().optional(),
   interests: z.array(z.string()),
+  next_of_kin_name: z.string().optional(),
+  next_of_kin_contact: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof ProfileSchema>;
@@ -46,6 +48,8 @@ export function ProfileSheet({ open, onClose, profile, onSave, isPending }: Prof
       location: profile.location ?? "",
       date_of_birth: profile.date_of_birth ?? undefined,
       interests: profile.interests ?? [],
+      next_of_kin_name: profile.next_of_kin_name ?? "",
+      next_of_kin_contact: profile.next_of_kin_contact ?? "",
     },
   });
 
@@ -57,6 +61,8 @@ export function ProfileSheet({ open, onClose, profile, onSave, isPending }: Prof
         location: profile.location ?? "",
         date_of_birth: profile.date_of_birth ?? undefined,
         interests: profile.interests ?? [],
+        next_of_kin_name: profile.next_of_kin_name ?? "",
+        next_of_kin_contact: profile.next_of_kin_contact ?? "",
       });
     }
   }, [open, profile, reset]);
@@ -70,6 +76,8 @@ export function ProfileSheet({ open, onClose, profile, onSave, isPending }: Prof
       location: values.location || null,
       date_of_birth: values.date_of_birth ?? null,
       interests: values.interests,
+      next_of_kin_name: values.next_of_kin_name || null,
+      next_of_kin_contact: values.next_of_kin_contact || null,
     });
   }
 
@@ -130,6 +138,34 @@ export function ProfileSheet({ open, onClose, profile, onSave, isPending }: Prof
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
               />
               {errors.date_of_birth && <p className="mt-1.5 text-xs text-red-500">{errors.date_of_birth.message}</p>}
+            </div>
+
+            {/* Next of Kin Name */}
+            <div>
+              <label htmlFor="next_of_kin_name" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
+                Next of Kin Name
+              </label>
+              <input
+                id="next_of_kin_name"
+                type="text"
+                placeholder="e.g. Sarah Smith"
+                {...register("next_of_kin_name")}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
+              />
+            </div>
+
+            {/* Next of Kin Contact */}
+            <div>
+              <label htmlFor="next_of_kin_contact" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
+                Next of Kin Contact
+              </label>
+              <input
+                id="next_of_kin_contact"
+                type="text"
+                placeholder="e.g. +44 7700 900000"
+                {...register("next_of_kin_contact")}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
+              />
             </div>
 
             {/* Bio */}
