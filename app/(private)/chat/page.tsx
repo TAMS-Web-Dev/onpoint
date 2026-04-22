@@ -18,7 +18,52 @@ type Message = {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
-  resources?: ResourceCardProps[];
+  resourceCategory?: string | null;
+};
+
+const RESOURCE_CARDS: Record<string, ResourceCardProps> = {
+  "mental-health": {
+    title: "Mental Health Support",
+    description: "Free, confidential mental health support for young people. No waiting list — open evenings and weekends.",
+    url: "https://www.kooth.com",
+    linkLabel: "Visit Kooth",
+  },
+  "careers": {
+    title: "Careers Advice",
+    description: "Free careers guidance, CV help, and apprenticeship search from the National Careers Service.",
+    url: "https://nationalcareers.service.gov.uk",
+    linkLabel: "Explore options",
+  },
+  "bereavement": {
+    title: "Bereavement Support",
+    description: "The Mix offers free support for young people dealing with grief and loss.",
+    url: "https://www.themix.org.uk/loss-and-bereavement",
+    linkLabel: "Get support",
+  },
+  "send": {
+    title: "SEND & Disability Support",
+    description: "Information and support for young people with special educational needs and disabilities.",
+    url: "https://www.gov.uk/children-with-special-educational-needs",
+    linkLabel: "Find out more",
+  },
+  "early-help": {
+    title: "Early Help & Family Support",
+    description: "Local early help services in the West Midlands for young people and families.",
+    url: "https://www.birmingham.gov.uk/early-help",
+    linkLabel: "Find local support",
+  },
+  "youth-services": {
+    title: "Youth Services",
+    description: "Find local youth clubs, activities, and services near you in the West Midlands.",
+    url: "https://www.wmca.org.uk/what-we-do/wellbeing",
+    linkLabel: "Find services",
+  },
+  "prevention": {
+    title: "Health & Wellbeing",
+    description: "Advice on healthy lifestyles, substance use, and sexual health for young people.",
+    url: "https://www.nhs.uk/live-well",
+    linkLabel: "NHS Live Well",
+  },
 };
 
 export default function ChatPage() {
@@ -27,11 +72,15 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialising, setIsInitialising] = useState(true);
+  const [isCrisisLocked, setIsCrisisLocked] = useState(false);
+  const [crisisPayload, setCrisisPayload] = useState<{ tier: string; category: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevSessionRef = useRef<string | null>(null);
 
-  // Bootstrap: run once on mount to get session + sessions list + initial history
+  // Suppress unused warning — crisisPayload reserved for Task 4.1 overlay
+  void crisisPayload;
+
   useEffect(() => {
     async function init() {
       try {
@@ -56,16 +105,16 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // React to session switches from the sidebar
   useEffect(() => {
     if (!sessionId) return;
     if (prevSessionRef.current === sessionId) return;
     prevSessionRef.current = sessionId;
 
-    // Skip reload on initial mount (messages already set above)
     if (isInitialising) return;
 
     setIsLoading(false);
+    setIsCrisisLocked(false);
+    setCrisisPayload(null);
     setMessages([]);
     setInput("");
     setIsInitialising(true);
@@ -88,14 +137,13 @@ export default function ChatPage() {
       });
   }, [sessionId, isInitialising]);
 
-  // Auto-scroll to bottom on new messages or loading state
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
   async function sendMessage(text?: string) {
     const content = (text ?? input).trim();
-    if (!content || isLoading || !sessionId) return;
+    if (isCrisisLocked || isLoading || !content || !sessionId) return;
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -113,26 +161,72 @@ export default function ChatPage() {
     });
 
     try {
-      // Placeholder: replaced by real Anthropic streaming in Task 2.4
-      await new Promise((resolve) => setTimeout(resolve, 1800));
+      const history = [...messages, userMessage].map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
 
-      const aiContent =
-        "Thanks for sharing that with me. I'm here to help — could you tell me a little more so I can point you to the right support?";
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history, sessionId }),
+      });
 
-      const aiMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: aiContent,
-        timestamp: new Date(),
-      };
+      const contentType = response.headers.get("Content-Type") ?? "";
 
-      setMessages((prev) => [...prev, aiMessage]);
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        if (data.error === "CRISIS_DETECTED") {
+          setIsCrisisLocked(true);
+          setCrisisPayload({ tier: data.tier, category: data.category });
+          setIsLoading(false);
+          return;
+        }
+        throw new Error(data.message ?? "Unexpected error from API.");
+      }
 
-      persistMessage(sessionId, "assistant", aiContent).catch(() => {
+      const resourceCategory = response.headers.get("X-Resource-Category");
+      const assistantId = crypto.randomUUID();
+
+      setMessages((prev) => [
+        ...prev,
+        { id: assistantId, role: "assistant", content: "", timestamp: new Date() },
+      ]);
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullText += decoder.decode(value, { stream: true });
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, content: fullText } : m))
+        );
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, resourceCategory } : m
+        )
+      );
+
+      persistMessage(sessionId, "assistant", fullText).catch(() => {
         toast.error("The AI response could not be saved.");
       });
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (err) {
+      console.error("sendMessage error:", (err as Error).message);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Something went wrong. Please try again.",
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();
@@ -180,9 +274,9 @@ export default function ChatPage() {
                   content={msg.content}
                   timestamp={msg.timestamp}
                 />
-                {msg.resources?.map((resource) => (
-                  <ResourceCard key={resource.url} {...resource} />
-                ))}
+                {msg.resourceCategory && RESOURCE_CARDS[msg.resourceCategory] && (
+                  <ResourceCard {...RESOURCE_CARDS[msg.resourceCategory]} />
+                )}
               </div>
             ))}
             {isLoading && <TypingIndicator />}
@@ -193,6 +287,17 @@ export default function ChatPage() {
       </div>
 
       <CrisisBanner />
+
+      {/* Crisis lock notice — placeholder until Task 4.1 overlay */}
+      {isCrisisLocked && (
+        <div className="px-4 py-2 bg-rose-50 border-t border-rose-200">
+          <p className="max-w-2xl mx-auto text-sm text-rose-700 text-center">
+            Chat is temporarily unavailable. Please contact{" "}
+            <strong>Childline on 0800 1111</strong> or text{" "}
+            <strong>SHOUT to 85258</strong>.
+          </p>
+        </div>
+      )}
 
       {/* Input bar */}
       <div className="border-t border-border bg-background px-4 py-3">
@@ -209,13 +314,13 @@ export default function ChatPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask me anything…"
-            disabled={isLoading}
+            disabled={isLoading || isCrisisLocked}
             className="flex-1 h-11 rounded-xl px-4 pl-10 md:pl-4 text-sm disabled:opacity-60"
             autoComplete="off"
           />
           <Button
             type="submit"
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || isCrisisLocked || !input.trim()}
             size="icon"
             className="h-11 w-11 rounded-xl bg-[#FF790E] hover:bg-[#e56d0d] text-white flex-shrink-0 disabled:opacity-50"
             aria-label="Send message"
