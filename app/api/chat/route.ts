@@ -2,19 +2,27 @@ import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 import { checkKeywords } from "@/lib/crisis-detection";
 import { logCrisis } from "@/lib/crisis-log";
+import { sendCrisisAlert } from "@/lib/twilio";
 
 export const runtime = "edge";
+
+function flagSession(sessionId: string): Promise<void> {
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/chat_sessions?id=eq.${sessionId}`;
+  return fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+      "Prefer": "return=minimal",
+    },
+    body: JSON.stringify({ is_flagged: true }),
+  }).then(() => undefined);
+}
 
 interface MessageParam {
   role: "user" | "assistant";
   content: string;
-}
-
-interface CrisisInfo {
-  isCrisis: boolean;
-  tier?: string | null;
-  category?: string | null;
-  resource?: string | null;
 }
 
 export async function POST(req: Request): Promise<Response> {
@@ -27,8 +35,7 @@ export async function POST(req: Request): Promise<Response> {
     sessionId = body.sessionId ?? "unknown";
 
     // ── STEP 1: Pre-call keyword check ───────────────────────────────────────
-    const lastUserContent =
-      [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+    const lastUserContent = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
     if (checkKeywords(lastUserContent)) {
       logCrisis({
@@ -38,6 +45,15 @@ export async function POST(req: Request): Promise<Response> {
         crisisCategory: "life-risk",
         transcriptSnippet: messages.slice(-10),
       }).catch((err) => console.error("Crisis log failed:", err));
+
+      flagSession(sessionId).catch((err) => console.error("Flag session failed:", err));
+
+      sendCrisisAlert({
+        tier: "tier3",
+        category: "life-risk",
+        sessionId,
+        timestamp: new Date().toISOString(),
+      }).catch((err) => console.error("Alert failed:", err));
 
       return Response.json({
         error: "CRISIS_DETECTED",
@@ -49,8 +65,7 @@ export async function POST(req: Request): Promise<Response> {
 
     // ── STEP 2: Mock mode ─────────────────────────────────────────────────────
     if (!process.env.ANTHROPIC_API_KEY) {
-      const mockText =
-        "Mock mode active — API key pending. This is a placeholder response from Ask OnPoint.";
+      const mockText = "Mock mode active — API key pending. This is a placeholder response from Ask OnPoint.";
       const encoder = new TextEncoder();
       const mockStream = new ReadableStream({
         async start(controller) {
@@ -68,180 +83,156 @@ export async function POST(req: Request): Promise<Response> {
 
     // ── STEP 3: History cap ───────────────────────────────────────────────────
     const cappedMessages: MessageParam[] =
-      messages.length > 20
-        ? [messages[0], messages[1], ...messages.slice(-18)]
-        : messages;
+      messages.length > 20 ? [messages[0], messages[1], ...messages.slice(-18)] : messages;
 
     // ── STEP 4: Call Claude ───────────────────────────────────────────────────
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const anthropicStream = anthropic.messages.stream({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: cappedMessages,
     });
 
-    // ── STEP 5 + 6: Stream interception ──────────────────────────────────────
+    // ── STEP 5: Parse JSON prefix sequentially ────────────────────────────────
     //
-    // We need to inspect the JSON prefix before deciding the response type.
-    // Strategy: resolve a promise the moment the JSON line is parsed, then
-    // return the appropriate Response (JSON error vs. text/plain stream).
-    // The ReadableStream's start() runs concurrently, buffering content
-    // until the client starts reading.
+    // Read events one at a time in the main async function — no concurrency.
+    // By the time we decide the response type, the Anthropic stream is still
+    // open, so the Response is always returned before the stream is closed.
+    // This eliminates the race condition in the previous ReadableStream design.
 
     const encoder = new TextEncoder();
-    let resolveCrisisInfo!: (info: CrisisInfo) => void;
+    const iter = anthropicStream[Symbol.asyncIterator]();
 
-    const crisisInfoPromise = new Promise<CrisisInfo>((resolve) => {
-      resolveCrisisInfo = resolve;
-    });
+    let jsonBuffer = "";
+    let jsonResolved = false;
+    let isCrisis = false;
+    let crisisTier: string | null = null;
+    let crisisCategory: string | null = null;
+    let resourceCategory: string | null = null;
+    let remainder = "";
 
-    let controllerClosed = false;
+    while (!jsonResolved) {
+      const { done, value: event } = await iter.next();
 
-    const outputStream = new ReadableStream<Uint8Array>({
-      async start(controller) {
-        const safeClose = () => {
-          if (!controllerClosed) {
-            controllerClosed = true;
-            controller.close();
-          }
-        };
+      if (done) {
+        remainder = jsonBuffer;
+        break;
+      }
 
-        let jsonBuffer = "";
-        let jsonResolved = false;
+      if (event.type !== "content_block_delta" || event.delta.type !== "text_delta") {
+        continue;
+      }
 
+      jsonBuffer += event.delta.text;
+      const braceIdx = jsonBuffer.indexOf("}");
+
+      if (braceIdx !== -1) {
         try {
-          for await (const event of anthropicStream) {
-            if (
-              event.type !== "content_block_delta" ||
-              event.delta.type !== "text_delta"
-            ) {
-              continue;
-            }
+          const parsed = JSON.parse(jsonBuffer.slice(0, braceIdx + 1));
+          jsonResolved = true;
+          isCrisis = Boolean(parsed.crisis_detected);
+          crisisTier = parsed.crisis_tier ?? null;
+          crisisCategory = parsed.crisis_category ?? null;
+          resourceCategory = parsed.resource_category ?? null;
 
-            const text = event.delta.text;
-
-            // After JSON resolved: stream everything straight through
-            if (jsonResolved) {
-              controller.enqueue(encoder.encode(text));
-              continue;
-            }
-
-            jsonBuffer += text;
-            const braceIdx = jsonBuffer.indexOf("}");
-
-            if (braceIdx !== -1) {
-              try {
-                const parsed = JSON.parse(jsonBuffer.slice(0, braceIdx + 1));
-                jsonResolved = true;
-
-                resolveCrisisInfo({
-                  isCrisis: Boolean(parsed.crisis_detected),
-                  tier: parsed.crisis_tier ?? null,
-                  category: parsed.crisis_category ?? null,
-                  resource: parsed.resource_category ?? null,
-                });
-
-                if (parsed.crisis_detected) {
-                  // Abort Anthropic connection and close stream — no content sent
-                  await anthropicStream.abort();
-                  safeClose();
-                  return;
-                }
-
-                // Strip the JSON line (up to and including the \n after })
-                const nlIdx = jsonBuffer.indexOf("\n", braceIdx);
-                const remainder =
-                  nlIdx !== -1
-                    ? jsonBuffer.slice(nlIdx + 1)
-                    : jsonBuffer.slice(braceIdx + 1);
-
-                if (remainder) {
-                  controller.enqueue(encoder.encode(remainder));
-                }
-                jsonBuffer = "";
-                continue;
-              } catch {
-                // JSON.parse failed — incomplete JSON, keep buffering
-              }
-            }
-
-            // Fallback: 500-char buffer exceeded without valid JSON
-            if (jsonBuffer.length > 500) {
-              jsonResolved = true;
-              resolveCrisisInfo({ isCrisis: false, resource: null });
-              controller.enqueue(encoder.encode(jsonBuffer));
-              jsonBuffer = "";
-            }
-          }
-
-          // Stream ended before JSON was resolved
-          if (!jsonResolved) {
-            resolveCrisisInfo({ isCrisis: false, resource: null });
-            if (jsonBuffer) {
-              controller.enqueue(encoder.encode(jsonBuffer));
-            }
-          }
-        } catch (err) {
-          // Ensure the promise always resolves so the main function isn't blocked
-          if (!jsonResolved) {
-            resolveCrisisInfo({ isCrisis: false, resource: null });
-          }
-          console.error(
-            `[${timestamp}] Stream error | session: ${sessionId} |`,
-            (err as Error).message
-          );
-        } finally {
-          safeClose();
+          const nlIdx = jsonBuffer.indexOf("\n", braceIdx);
+          remainder = nlIdx !== -1 ? jsonBuffer.slice(nlIdx + 1) : jsonBuffer.slice(braceIdx + 1);
+          jsonBuffer = "";
+        } catch {
+          // Incomplete JSON — keep buffering
         }
-      },
+      }
 
-      cancel() {
-        anthropicStream.abort();
-      },
-    });
+      // Fallback: 500-char buffer exceeded without valid JSON
+      if (!jsonResolved && jsonBuffer.length > 500) {
+        jsonResolved = true;
+        remainder = jsonBuffer;
+        jsonBuffer = "";
+      }
+    }
 
-    // Wait for the JSON prefix decision — resolves as soon as the first
-    // complete JSON line is parsed (typically within the first 1–2 chunks)
-    const { isCrisis, tier, category, resource } = await crisisInfoPromise;
-
-    // ── Crisis detected via Claude's stream ───────────────────────────────────
+    // ── STEP 6: Crisis detected ───────────────────────────────────────────────
     if (isCrisis) {
+      anthropicStream.abort();
+
       logCrisis({
         sessionId,
         triggerLayer: "semantic",
-        crisisTier: (tier ?? "tier2") as "tier1" | "tier2" | "tier3",
-        crisisCategory: (category as "life-risk" | "safeguarding" | "jailbreak" | "distress") ?? "distress",
+        crisisTier: (crisisTier ?? "tier2") as "tier1" | "tier2" | "tier3",
+        crisisCategory: (crisisCategory as "life-risk" | "safeguarding" | "jailbreak" | "distress") ?? "distress",
         transcriptSnippet: messages.slice(-10),
       }).catch((err) => console.error("Crisis log failed:", err));
 
+      flagSession(sessionId).catch((err) => console.error("Flag session failed:", err));
+
+      if (crisisTier === "tier2" || crisisTier === "tier3") {
+        sendCrisisAlert({
+          tier: crisisTier as "tier2" | "tier3",
+          category: ((crisisCategory ?? "distress") as "life-risk" | "safeguarding" | "jailbreak" | "distress"),
+          sessionId,
+          timestamp: new Date().toISOString(),
+        }).catch((err) => console.error("Alert failed:", err));
+      }
+
       return Response.json({
         error: "CRISIS_DETECTED",
-        tier,
-        category,
+        tier: crisisTier,
+        category: crisisCategory,
       });
     }
 
-    // ── STEP 7 (normal path): Return streaming text response ─────────────────
+    // ── STEP 7: Stream remaining content ─────────────────────────────────────
+    //
+    // TransformStream separates the write side from the read side.
+    // We return the Response with the readable side immediately, then write
+    // remaining content in a background task. The writer only closes after
+    // all content is written — the stream is never closed before the Response
+    // is returned.
+
+    const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+    const writer = writable.getWriter();
+
+    const writeTask = (async () => {
+      try {
+        if (remainder) {
+          await writer.write(encoder.encode(remainder));
+        }
+
+        while (true) {
+          const { done, value: event } = await iter.next();
+          if (done) break;
+          if (event.type !== "content_block_delta" || event.delta.type !== "text_delta") {
+            continue;
+          }
+          await writer.write(encoder.encode(event.delta.text));
+        }
+
+        await writer.close();
+      } catch (err) {
+        console.error(`[${timestamp}] Stream write error | session: ${sessionId} |`, (err as Error).message);
+        try {
+          await writer.abort(err);
+        } catch {
+          // ignore if already closed
+        }
+      }
+    })();
+
+    void writeTask;
+
     const responseHeaders: Record<string, string> = {
       "Content-Type": "text/plain; charset=utf-8",
     };
-
-    if (resource) {
-      responseHeaders["X-Resource-Category"] = resource;
+    if (resourceCategory) {
+      responseHeaders["X-Resource-Category"] = resourceCategory;
     }
 
-    return new Response(outputStream, { headers: responseHeaders });
+    return new Response(readable, { headers: responseHeaders });
   } catch (err) {
     const error = err as Error;
-    console.error(
-      `[${timestamp}] Chat API error | session: ${sessionId} |`,
-      error.message
-    );
-    return Response.json(
-      { error: "INTERNAL_ERROR", message: error.message },
-      { status: 500 }
-    );
+    console.error(`[${timestamp}] Chat API error | session: ${sessionId} |`, error.message);
+    return Response.json({ error: "INTERNAL_ERROR", message: error.message }, { status: 500 });
   }
 }

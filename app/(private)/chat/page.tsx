@@ -10,6 +10,7 @@ import { SuggestedPrompts } from "@/components/chat/SuggestedPrompts";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { CrisisBanner } from "@/components/chat/CrisisBanner";
 import { ResourceCard, type ResourceCardProps } from "@/components/chat/ResourceCard";
+import { CrisisOverlay } from "@/components/crisis/CrisisOverlay";
 import { useChatStore } from "@/store/chat-store";
 import { initChatSession, loadSession, persistMessage } from "./actions";
 
@@ -73,18 +74,23 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialising, setIsInitialising] = useState(true);
   const [isCrisisLocked, setIsCrisisLocked] = useState(false);
-  const [crisisPayload, setCrisisPayload] = useState<{ tier: string; category: string } | null>(null);
+  const [isResolved, setIsResolved] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [crisisPayload, setCrisisPayload] = useState<{
+    tier: "tier1" | "tier2" | "tier3";
+    category: "life-risk" | "safeguarding" | "jailbreak" | "distress" | null;
+  } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevSessionRef = useRef<string | null>(null);
 
-  // Suppress unused warning — crisisPayload reserved for Task 4.1 overlay
-  void crisisPayload;
-
   useEffect(() => {
     async function init() {
+      let sid: string | undefined;
+
       try {
-        const { sessionId: sid, history, sessions } = await initChatSession();
+        const { sessionId: resolvedSid, history, sessions } = await initChatSession();
+        sid = resolvedSid;
         setSessions(sessions);
         setSessionId(sid);
         setMessages(
@@ -98,7 +104,24 @@ export default function ChatPage() {
       } catch {
         toast.error("Could not load your chat history. Please refresh.");
       } finally {
-        setIsInitialising(false);
+        setIsInitialising(false); // chat renders here
+      }
+
+      // Check session lock status after UI is shown
+      if (!sid) return;
+      try {
+        const res = await fetch(`/api/chat/session-status?sessionId=${sid}`);
+        if (res.ok) {
+          const { is_flagged, is_resolved } = await res.json();
+          if (is_resolved) {
+            setIsCrisisLocked(false);
+            setIsResolved(true);
+          } else if (is_flagged) {
+            setIsCrisisLocked(true);
+          }
+        }
+      } catch {
+        // silent — chat remains functional if status check fails
       }
     }
     init();
@@ -114,6 +137,7 @@ export default function ChatPage() {
 
     setIsLoading(false);
     setIsCrisisLocked(false);
+    setShowOverlay(false);
     setCrisisPayload(null);
     setMessages([]);
     setInput("");
@@ -161,10 +185,20 @@ export default function ChatPage() {
     });
 
     try {
-      const history = [...messages, userMessage].map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // If this session was previously locked and restored by DSL,
+      // we intentionally send no history to the Claude API.
+      // This prevents the crisis-triggering message from re-triggering
+      // detection and gives the user a clean slate.
+      // EDGE CASE: Claude will not remember previous conversation context
+      // after a restored session. This is a deliberate safeguarding decision —
+      // safety takes priority over conversational continuity. The user can
+      // still see their message history on screen but Claude starts fresh.
+      const history = isResolved
+        ? [{ role: userMessage.role, content: userMessage.content }]
+        : [...messages, userMessage].map((m) => ({
+            role: m.role,
+            content: m.content,
+          }));
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -178,7 +212,11 @@ export default function ChatPage() {
         const data = await response.json();
         if (data.error === "CRISIS_DETECTED") {
           setIsCrisisLocked(true);
-          setCrisisPayload({ tier: data.tier, category: data.category });
+          setShowOverlay(true);
+          setCrisisPayload({
+            tier: (data.tier ?? "tier2") as "tier1" | "tier2" | "tier3",
+            category: (data.category ?? null) as "life-risk" | "safeguarding" | "jailbreak" | "distress" | null,
+          });
           setIsLoading(false);
           return;
         }
@@ -187,6 +225,7 @@ export default function ChatPage() {
 
       const resourceCategory = response.headers.get("X-Resource-Category");
       const assistantId = crypto.randomUUID();
+      console.log("[chat] reached stream reading phase — status:", response.status, "content-type:", response.headers.get("Content-Type"));
 
       setMessages((prev) => [
         ...prev,
@@ -217,7 +256,9 @@ export default function ChatPage() {
         toast.error("The AI response could not be saved.");
       });
     } catch (err) {
-      console.error("sendMessage error:", (err as Error).message);
+      console.error("sendMessage error — full error object:", err);
+      console.error("sendMessage error — message:", (err as Error).message);
+      console.error("sendMessage error — stack:", (err as Error).stack);
       setMessages((prev) => [
         ...prev,
         {
@@ -288,17 +329,6 @@ export default function ChatPage() {
 
       <CrisisBanner />
 
-      {/* Crisis lock notice — placeholder until Task 4.1 overlay */}
-      {isCrisisLocked && (
-        <div className="px-4 py-2 bg-rose-50 border-t border-rose-200">
-          <p className="max-w-2xl mx-auto text-sm text-rose-700 text-center">
-            Chat is temporarily unavailable. Please contact{" "}
-            <strong>Childline on 0800 1111</strong> or text{" "}
-            <strong>SHOUT to 85258</strong>.
-          </p>
-        </div>
-      )}
-
       {/* Input bar */}
       <div className="border-t border-border bg-background px-4 py-3">
         <form
@@ -329,6 +359,13 @@ export default function ChatPage() {
           </Button>
         </form>
       </div>
+      {isCrisisLocked && crisisPayload !== null && showOverlay && (
+        <CrisisOverlay
+          tier={crisisPayload.tier}
+          category={crisisPayload.category}
+          onAcknowledge={() => setShowOverlay(false)}
+        />
+      )}
     </div>
   );
 }

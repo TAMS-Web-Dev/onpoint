@@ -1,8 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const PROTECTED_ROUTES = ['/chat', '/admin', '/private']
 const ADMIN_ROUTES = ['/admin']
+const SUSPEND_EXEMPT_PREFIXES = ['/admin', '/suspended']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -52,6 +54,30 @@ export async function middleware(request: NextRequest) {
       const notFoundUrl = request.nextUrl.clone()
       notFoundUrl.pathname = '/404'
       return NextResponse.redirect(notFoundUrl)
+    }
+  }
+
+  // Suspend check — skip for admin and suspended paths
+  const isSuspendExempt = SUSPEND_EXEMPT_PREFIXES.some((p) => pathname.startsWith(p))
+  if (!isSuspendExempt) {
+    try {
+      const serviceSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      const { data } = await serviceSupabase
+        .from('profiles')
+        .select('suspended')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (data?.suspended === true) {
+        const suspendedUrl = request.nextUrl.clone()
+        suspendedUrl.pathname = '/suspended'
+        return NextResponse.redirect(suspendedUrl)
+      }
+    } catch {
+      // fail-open — allow through if suspend check fails
     }
   }
 
