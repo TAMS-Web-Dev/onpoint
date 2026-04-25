@@ -232,7 +232,7 @@ export default function FlagDetailPage() {
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium">Assessment</label>
-          <Select value={assessment} onValueChange={setAssessment} className="">
+          <Select value={assessment} onValueChange={(v) => setAssessment(v ?? "")}>
             <SelectTrigger className="w-full sm:w-64 border-gray-400/50">
               <SelectValue placeholder="Select assessment…" />
             </SelectTrigger>
