@@ -11,6 +11,7 @@ import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { CrisisBanner } from "@/components/chat/CrisisBanner";
 import { ResourceCard, type ResourceCardProps } from "@/components/chat/ResourceCard";
 import { CrisisOverlay } from "@/components/crisis/CrisisOverlay";
+import { ConsentBanner } from "@/components/chat/ConsentBanner";
 import { useChatStore } from "@/store/chat-store";
 import { initChatSession, loadSession, persistMessage } from "./actions";
 
@@ -73,6 +74,8 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialising, setIsInitialising] = useState(true);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
   const [isCrisisLocked, setIsCrisisLocked] = useState(false);
   const [isResolved, setIsResolved] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
@@ -103,26 +106,41 @@ export default function ChatPage() {
         );
       } catch {
         toast.error("Could not load your chat history. Please refresh.");
-      } finally {
-        setIsInitialising(false); // chat renders here
       }
 
-      // Check session lock status after UI is shown
-      if (!sid) return;
-      try {
-        const res = await fetch(`/api/chat/session-status?sessionId=${sid}`);
-        if (res.ok) {
-          const { is_flagged, is_resolved } = await res.json();
-          if (is_resolved) {
-            setIsCrisisLocked(false);
-            setIsResolved(true);
-          } else if (is_flagged) {
-            setIsCrisisLocked(true);
+      // Check session lock status
+      if (sid) {
+        try {
+          const res = await fetch(`/api/chat/session-status?sessionId=${sid}`);
+          if (res.ok) {
+            const { is_flagged, is_resolved } = await res.json();
+            if (is_resolved) {
+              setIsCrisisLocked(false);
+              setIsResolved(true);
+            } else if (is_flagged) {
+              setIsCrisisLocked(true);
+            }
           }
+        } catch {
+          // silent — chat remains functional if status check fails
+        }
+      }
+
+      // Check consent — fail-open so a broken API never blocks the chat
+      try {
+        const res = await fetch("/api/chat/consent");
+        if (res.ok) {
+          const { chat_consent_given } = await res.json();
+          setConsentGiven(chat_consent_given ?? false);
+        } else {
+          setConsentGiven(true);
         }
       } catch {
-        // silent — chat remains functional if status check fails
+        setConsentGiven(true);
       }
+
+      setConsentChecked(true);
+      setIsInitialising(false);
     }
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -274,6 +292,11 @@ export default function ChatPage() {
     }
   }
 
+  function handleAccept() {
+    fetch("/api/chat/consent", { method: "POST" }).catch(() => {});
+    setConsentGiven(true);
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -298,6 +321,10 @@ export default function ChatPage() {
         </div>
       </div>
     );
+  }
+
+  if (consentChecked && !consentGiven) {
+    return <ConsentBanner onAccept={handleAccept} />;
   }
 
   return (

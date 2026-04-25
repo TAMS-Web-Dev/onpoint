@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ChevronRight, Flame, LogOut, Settings, User } from 'lucide-react'
+import { ChevronRight, Flame, LogOut, Settings, Trash2, User } from 'lucide-react'
 import { signOut } from '@/app/(auth)/actions'
 import { fetchProfile, updateUserProfile } from '@/app/(main)/more/actions'
 import { ProfileSheet } from '@/components/more/ProfileSheet'
 import { SettingsSheet } from '@/components/more/SettingsSheet'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { Profile, Database } from '@/types/database'
 
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
@@ -31,6 +33,8 @@ interface MorePageClientProps {
 export function MorePageClient({ initialProfile, userId, userEmail }: MorePageClientProps) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const queryClient = useQueryClient()
 
   const { data: profile } = useQuery({
@@ -62,6 +66,20 @@ export function MorePageClient({ initialProfile, userId, userEmail }: MorePageCl
       queryClient.invalidateQueries({ queryKey: ['profile', userId] })
     },
   })
+
+  async function handleDeleteHistory() {
+    setIsDeleting(true)
+    try {
+      const res = await fetch('/api/chat/delete-history', { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      setDeleteDialogOpen(false)
+      toast.success('Your conversation history has been deleted.')
+    } catch {
+      toast.error('Something went wrong. Please try again.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   if (!profile) return null
 
@@ -125,6 +143,32 @@ export function MorePageClient({ initialProfile, userId, userEmail }: MorePageCl
         </div>
       </section>
 
+      {/* Data & Privacy */}
+      <section className="mt-8">
+        <h2 className="text-secondary font-extrabold text-xs uppercase tracking-widest mb-3 px-1">
+          Data &amp; Privacy
+        </h2>
+        <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3.5">
+            <Trash2 size={18} className="text-red-500 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-secondary font-medium text-sm">Delete Conversation History</p>
+              <p className="text-foreground/55 text-xs mt-0.5">
+                Permanently delete all your chat messages
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="flex-shrink-0 border-red-200 text-red-600 hover:bg-red-50"
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Log Out */}
       <div className="mt-6 bg-white rounded-xl border border-border shadow-sm overflow-hidden">
         <form action={signOut}>
@@ -137,6 +181,38 @@ export function MorePageClient({ initialProfile, userId, userEmail }: MorePageCl
           </button>
         </form>
       </div>
+
+      {/* Delete History Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete conversation history?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            This will permanently delete all your chat messages and conversations. This cannot be
+            undone.
+            <br />
+            <br />
+            Note: anonymised safeguarding records are retained separately as required by law.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteHistory}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting…' : 'Delete all conversations'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Sheets */}
       <ProfileSheet

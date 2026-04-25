@@ -64,9 +64,10 @@ export interface DecryptedMessage {
 
 export async function createSession(userId: string): Promise<string> {
   const supabase = await createClient();
+  const deleteAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("chat_sessions")
-    .insert({ user_id: userId })
+    .insert({ user_id: userId, delete_at: deleteAt })
     .select("id")
     .single();
 
