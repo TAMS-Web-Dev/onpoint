@@ -43,9 +43,15 @@ const PROTOCOL_ITEMS = [
 ];
 
 function TierBadge({ tier }: { tier: string }) {
-  if (tier === "tier3") return <Badge variant="destructive">Tier 3</Badge>;
-  if (tier === "tier2") return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Tier 2</Badge>;
-  return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Tier 1</Badge>;
+  if (tier === "tier3")
+    return (
+      <Badge variant="destructive" className=" border-2 font-semibold">
+        Tier 3
+      </Badge>
+    );
+  if (tier === "tier2")
+    return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-2 font-semibold">Tier 2</Badge>;
+  return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-2 font-semibold">Tier 1</Badge>;
 }
 
 export default function FlagDetailPage() {
@@ -163,10 +169,7 @@ export default function FlagDetailPage() {
   return (
     <div className="max-w-3xl mx-auto flex flex-col gap-8 pb-16">
       {/* Back */}
-      <Link
-        href="/admin/flags"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
-      >
+      <Link href="/admin/flags" className="inline-flex items-center gap-1.5 text-sm transition-colors w-fit">
         <ArrowLeft size={15} />
         Back to Flagged Content
       </Link>
@@ -175,7 +178,7 @@ export default function FlagDetailPage() {
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <TierBadge tier={flag.crisis_tier} />
-          <Badge variant="outline" className="capitalize">
+          <Badge variant="outline" className="capitalize border-2 font-semibold">
             {flag.crisis_category.replace("-", " ")}
           </Badge>
           {isReviewed && <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Reviewed</Badge>}
@@ -192,8 +195,8 @@ export default function FlagDetailPage() {
       {/* Transcript */}
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-[#2D1D44]">Transcript Snippet</h2>
-          <p className="text-xs text-muted-foreground">Last 10 exchanges before crisis trigger</p>
+          <h2 className="font-semibold text-[#2D1D44]">Transcript Snippet</h2>
+          <p className="text-sm">Last 10 exchanges before crisis trigger</p>
         </div>
 
         {transcriptFailed ? (
@@ -205,7 +208,7 @@ export default function FlagDetailPage() {
             No transcript available.
           </div>
         ) : (
-          <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted/20 p-4">
+          <div className="flex flex-col gap-2 rounded-xl border border-border bg-white p-4">
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
@@ -224,13 +227,13 @@ export default function FlagDetailPage() {
       </section>
 
       {/* DSL Assessment */}
-      <section className="flex flex-col gap-4 rounded-xl border border-border p-5">
-        <h2 className="text-sm font-semibold text-[#2D1D44]">DSL Assessment</h2>
+      <section className="flex flex-col gap-4 rounded-xl border border-border p-5 bg-white">
+        <h2 className="font-semibold text-[#2D1D44]">DSL Assessment</h2>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Assessment</label>
-          <Select value={assessment} onValueChange={setAssessment}>
-            <SelectTrigger className="w-full sm:w-64">
+          <label className="text-sm font-medium">Assessment</label>
+          <Select value={assessment} onValueChange={setAssessment} className="">
+            <SelectTrigger className="w-full sm:w-64 border-gray-400/50">
               <SelectValue placeholder="Select assessment…" />
             </SelectTrigger>
             <SelectContent>
@@ -242,13 +245,13 @@ export default function FlagDetailPage() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">DSL Notes</label>
+          <label className="text-sm font-medium">DSL Notes</label>
           <Textarea
             value={dslNotes}
             onChange={(e) => setDslNotes(e.target.value)}
             placeholder="Record your assessment rationale..."
             rows={4}
-            className="resize-none"
+            className="resize-none border-gray-400/50"
           />
         </div>
 
@@ -262,8 +265,8 @@ export default function FlagDetailPage() {
       </section>
 
       {/* Actions */}
-      <section className="flex flex-col gap-3 rounded-xl border border-border p-5">
-        <h2 className="text-sm font-semibold text-[#2D1D44]">Actions</h2>
+      <section className="flex flex-col gap-3 rounded-xl border border-border p-5 bg-white">
+        <h2 className="font-semibold text-[#2D1D44]">Actions</h2>
 
         <div className="flex flex-wrap items-center gap-3">
           {!isRestored && (
@@ -289,13 +292,13 @@ export default function FlagDetailPage() {
       </section>
 
       {/* Safeguarding Protocol Checklist */}
-      <section className="flex flex-col gap-3 rounded-xl border border-border p-5">
+      <section className="flex flex-col gap-3 rounded-xl border border-border p-5 bg-white">
         <div>
-          <h2 className="text-sm font-semibold text-[#2D1D44]">Safeguarding Protocol Checklist</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Protocol Section 6.1 — tick each step as completed</p>
+          <h2 className="font-semibold text-[#2D1D44]">Safeguarding Protocol Checklist</h2>
+          <p className="text-sm mt-0.5 text-muted-foreground">Protocol Section 6.1 — tick each step as completed</p>
         </div>
 
-        <ul className="flex flex-col gap-2.5">
+        <ul className="flex flex-col gap-2.5 mt-4">
           {PROTOCOL_ITEMS.map((item, i) => (
             <li
               key={i}

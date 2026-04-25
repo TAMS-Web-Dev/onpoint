@@ -3,22 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 import { format } from "date-fns";
 import { ArrowRight, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const PAGE_SIZE = 20;
 
 function serviceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 }
 
 interface SessionRow {
@@ -87,11 +77,7 @@ async function getSessions(page: number): Promise<{
   return { sessions: result, total, totalPages };
 }
 
-export default async function LogsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string }>;
-}) {
+export default async function LogsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1"));
   const { sessions, total, totalPages } = await getSessions(page);
@@ -106,21 +92,14 @@ export default async function LogsPage({
             {total}
           </span>
         </div>
-        <p className="text-sm text-gray-500 mt-1">
-          All platform conversations — anonymised
-        </p>
+        <p className="text-sm text-gray-500 mt-1">All platform conversations — anonymised</p>
         <hr className="mt-4 border-border" />
       </div>
 
       {sessions.length === 0 ? (
         <div className="rounded-lg border border-border bg-muted/20 px-6 py-20 text-center">
-          <MessageSquare
-            size={32}
-            className="mx-auto mb-3 text-muted-foreground/40"
-          />
-          <p className="text-sm font-medium text-muted-foreground">
-            No sessions yet
-          </p>
+          <MessageSquare size={32} className="mx-auto mb-3 text-muted-foreground/40" />
+          <p className="text-sm font-medium text-muted-foreground">No sessions yet</p>
           <p className="text-xs text-muted-foreground/60 mt-1">
             Conversations will appear here once users start chatting.
           </p>
@@ -142,24 +121,13 @@ export default async function LogsPage({
               </TableHeader>
               <TableBody>
                 {sessions.map((session) => (
-                  <TableRow
-                    key={session.id}
-                    className={session.is_flagged ? "border-l-4 border-l-red-400" : undefined}
-                  >
-                    <TableCell className="font-mono text-xs text-gray-600">
-                      {session.id.slice(0, 8)}…
+                  <TableRow key={session.id} className={session.is_flagged ? "border-l-4 border-l-red-400" : undefined}>
+                    <TableCell className="font-mono">{session.id.slice(0, 8)}…</TableCell>
+                    <TableCell className="">{format(new Date(session.created_at), "d MMM yyyy, HH:mm")}</TableCell>
+                    <TableCell className="">
+                      {session.last_message_at ? format(new Date(session.last_message_at), "d MMM yyyy, HH:mm") : "—"}
                     </TableCell>
-                    <TableCell className="text-gray-500">
-                      {format(new Date(session.created_at), "d MMM yyyy, HH:mm")}
-                    </TableCell>
-                    <TableCell className="text-gray-500">
-                      {session.last_message_at
-                        ? format(new Date(session.last_message_at), "d MMM yyyy, HH:mm")
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-gray-900 font-medium">
-                      {session.message_count}
-                    </TableCell>
+                    <TableCell className="text-gray-900 font-medium">{session.message_count}</TableCell>
                     <TableCell>
                       {session.is_flagged ? (
                         <span className="inline-flex items-center rounded-full border-2 border-red-200 bg-red-50 text-red-600 text-xs font-semibold px-2.5 py-0.5">
