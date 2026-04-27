@@ -10,15 +10,17 @@ import {
   Menu,
   MoreHorizontal,
   User,
+  Users,
   X,
 } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const NAV_LINKS = [
-  { label: 'Home',   href: '/',       icon: Home          },
-  { label: 'Events', href: '/events', icon: Calendar      },
-  { label: 'More',   href: '/more',   icon: MoreHorizontal },
+  { label: 'Home',      href: '/',          icon: Home          },
+  { label: 'Events',    href: '/events',    icon: Calendar      },
+  { label: 'Community', href: '/community', icon: Users         },
+  { label: 'More',      href: '/more',      icon: MoreHorizontal },
 ]
 
 interface NavbarProps {

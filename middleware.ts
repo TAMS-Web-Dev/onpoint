@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PROTECTED_ROUTES = ['/chat', '/admin', '/private']
+const PROTECTED_ROUTES = ['/chat', '/admin', '/private', '/community']
 const ADMIN_ROUTES = ['/admin']
 const SUSPEND_EXEMPT_PREFIXES = ['/admin', '/suspended']
 
@@ -85,5 +85,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/chat/:path*', '/admin/:path*', '/private/:path*'],
+  matcher: ['/chat/:path*', '/admin/:path*', '/private/:path*', '/community/:path*'],
 }
