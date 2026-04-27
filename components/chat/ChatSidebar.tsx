@@ -69,7 +69,7 @@ export function ChatSidebar({ onNavigate }: ChatSidebarProps) {
       <div className="mx-3 mb-3 h-px bg-border" />
 
       {/* Session list */}
-      <ScrollArea className="flex-1 px-2">
+      <div className="flex-1 px-2 overflow-y-auto">
         {sessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 text-center px-4">
             <MessageSquare size={20} className="text-muted-foreground/40" />
@@ -89,27 +89,25 @@ export function ChatSidebar({ onNavigate }: ChatSidebarProps) {
                       "w-full text-left rounded-lg px-3 py-2.5 transition-all group",
                       isActive
                         ? "bg-background border-l-2 border-[#FF790E] shadow-sm"
-                        : "border-l-2 border-transparent hover:bg-background/70"
+                        : "border-l-2 border-transparent hover:bg-background/70",
                     )}
                   >
                     <p
                       className={cn(
                         "text-sm truncate leading-snug",
-                        isActive ? "text-[#2D1D44] font-semibold" : "text-foreground/60 group-hover:text-foreground"
+                        isActive ? "text-[#2D1D44] font-semibold" : "text-foreground/60 group-hover:text-foreground",
                       )}
                     >
                       {session.preview}
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {formatSessionDate(session.created_at)}
-                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{formatSessionDate(session.created_at)}</p>
                   </button>
                 </li>
               );
             })}
           </ul>
         )}
-      </ScrollArea>
+      </div>
     </aside>
   );
 }
