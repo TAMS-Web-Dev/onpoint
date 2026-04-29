@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { ThumbsUp, MessageCircle, Share2 } from "lucide-react";
 
 const POSTS = [
@@ -84,29 +83,10 @@ export default function CommunityPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
-        {/* Left — posts */}
-        <div className="flex flex-col gap-6">
-          {POSTS.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
-        </div>
-
-        {/* Right — sidebar */}
-        <aside className="lg:sticky lg:top-20">
-          <div className="bg-white rounded-2xl border border-border shadow-sm p-5">
-            <h2 className="text-base font-bold text-secondary">Ask OnPoint</h2>
-            <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
-              Have a question or need support? Our AI assistant is here to help.
-            </p>
-            <Link
-              href="/chat"
-              className="mt-4 flex items-center justify-center w-full bg-primary hover:bg-primary/90 text-white text-sm font-semibold rounded-lg px-4 py-2.5 transition-colors"
-            >
-              Chat with Ask OnPoint
-            </Link>
-          </div>
-        </aside>
+      <div className="flex flex-col gap-6 max-w-2xl">
+        {POSTS.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
       </div>
     </main>
   );

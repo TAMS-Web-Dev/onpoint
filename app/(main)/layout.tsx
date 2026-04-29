@@ -1,5 +1,6 @@
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import AskOnPointWidget from '@/components/AskOnPointWidget'
 import { getCurrentUserWithProfile } from '@/lib/db/profile'
 
 function getInitials(name: string | null | undefined): string {
@@ -19,11 +20,13 @@ export default async function MainLayout({
 }) {
   const { profile } = await getCurrentUserWithProfile()
   const initials = profile ? getInitials(profile.full_name) : null
+  const isLoggedIn = !!profile
 
   return (
     <>
       <Navbar initials={initials} />
       {children}
+      <AskOnPointWidget isLoggedIn={isLoggedIn} />
       <Footer />
     </>
   )

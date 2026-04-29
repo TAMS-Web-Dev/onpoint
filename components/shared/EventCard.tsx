@@ -71,12 +71,20 @@ export default function EventCard({ event, isLoggedIn }: EventCardProps) {
         {/* Footer */}
         <div className="mt-auto pt-4 flex items-center justify-between">
           <span className="text-secondary font-extrabold text-sm">{price}</span>
-          <button
-            onClick={handleBook}
-            className="bg-primary text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-primary/90 active:scale-95 transition-all duration-200"
-          >
-            Book Now
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/events/${id}`}
+              className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 active:scale-95 transition-all duration-200"
+            >
+              More Details
+            </Link>
+            <button
+              onClick={handleBook}
+              className="bg-primary text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-primary/90 active:scale-95 transition-all duration-200"
+            >
+              Book Now
+            </button>
+          </div>
         </div>
       </div>
     </article>
