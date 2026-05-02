@@ -1,81 +1,30 @@
-import Image from "next/image";
-import { ThumbsUp, MessageCircle, Share2 } from "lucide-react";
+import { createClient } from '@/lib/supabase/server'
+import { getCurrentUserWithProfile } from '@/lib/db/profile'
+import { fetchPosts } from '@/lib/db/community'
+import { CommunityFeed } from '@/components/community/CommunityFeed'
 
-const POSTS = [
-  {
-    id: 1,
-    author: "Alex Johnson",
-    time: "5 days ago",
-    content:
-      "Welcome to On Point! We're excited to launch our new community platform for creative young adults in the West Midlands. Join us on this journey as we build a vibrant community together!",
-    image: "/images/community/post1.jpeg",
-    likes: 24,
-    comments: 0,
-  },
-  {
-    id: 2,
-    author: "Alex Johnson",
-    time: "3 days ago",
-    title: "Upcoming Creative Opportunities",
-    content:
-      "We've partnered with several local businesses looking for fresh talent. Check out our Talent page for more information on these exciting opportunities!",
-    image: "/images/community/post2.jpeg",
-    likes: 8,
-    comments: 3,
-  },
-];
+export default async function CommunityPage() {
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+  const { profile } = await getCurrentUserWithProfile()
+  const posts = await fetchPosts(authUser?.id ?? null)
 
-function PostCard({ post }: { post: (typeof POSTS)[number] }) {
-  return (
-    <article className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-      <div className="p-5">
-        {/* Author row */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border border-border">
-            <Image src="/images/community/avatar.jpeg" alt={post.author} fill sizes="40px" className="object-cover" />
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-secondary">{post.author}</span>
-            <span className="bg-secondary/10 text-secondary text-xs font-semibold px-2 py-0.5 rounded-full">Admin</span>
-            <span className="text-xs text-muted-foreground">{post.time}</span>
-          </div>
-        </div>
+  const role = authUser?.app_metadata?.role ?? authUser?.user_metadata?.role
+  const isAdmin = role === 'admin' || role === 'super_admin'
+  const isActivePartner = profile?.user_type === 'partner' && profile?.status === 'active'
+  const canPost = isAdmin || isActivePartner
 
-        {/* Optional title */}
-        {post.title && <h2 className="text-base font-bold text-secondary mb-2">{post.title}</h2>}
+  const currentUser = authUser
+    ? {
+        id: authUser.id,
+        name: profile?.full_name ?? null,
+        avatar: profile?.avatar_url ?? null,
+        isAdmin,
+      }
+    : null
 
-        {/* Body */}
-        <p className="text-sm text-foreground/80 leading-relaxed">{post.content}</p>
-      </div>
-
-      {/* Post image */}
-      <div className="relative aspect-[16/9] mx-5 mb-5 rounded-xl overflow-hidden">
-        <Image src={post.image} alt="" fill sizes="(max-width: 768px) 100vw, 600px" className="object-cover" />
-      </div>
-
-      {/* Action bar */}
-      <div className="flex items-center gap-5 px-5 pb-4 border-t border-border pt-3">
-        <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <ThumbsUp size={15} />
-          {post.likes}
-        </span>
-        <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <MessageCircle size={15} />
-          {post.comments}
-        </span>
-        <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Share2 size={15} />
-          Share
-        </span>
-      </div>
-    </article>
-  );
-}
-
-export default function CommunityPage() {
   return (
     <main className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
-      {/* Page header */}
       <div className="mb-8">
         <h1 className="text-2xl font-extrabold text-secondary">Community</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -83,11 +32,14 @@ export default function CommunityPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-6 max-w-2xl">
-        {POSTS.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
+      <div className="max-w-2xl">
+        <CommunityFeed
+          initialPosts={posts}
+          currentUserId={authUser?.id ?? null}
+          canPost={canPost}
+          currentUser={currentUser}
+        />
       </div>
     </main>
-  );
+  )
 }
