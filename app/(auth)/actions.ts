@@ -78,6 +78,7 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
     email,
     password,
     options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       data: {
         full_name: fullName,
         date_of_birth: dateOfBirth,
@@ -93,7 +94,7 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
 
   // No session means Supabase email confirmation is enabled
   if (!data.session) {
-    redirect("/sign-in?message=check-email");
+    redirect("/check-email");
   }
 
   redirect("/community");

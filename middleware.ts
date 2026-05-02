@@ -72,6 +72,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(signInUrl)
   }
 
+  // Email not yet verified → hold at check-email page
+  if (!user.email_confirmed_at) {
+    const checkEmailUrl = request.nextUrl.clone()
+    checkEmailUrl.pathname = '/check-email'
+    return NextResponse.redirect(checkEmailUrl)
+  }
+
   // Admin route — check role from app_metadata (server-set) with user_metadata fallback
   const isAdminRoute = ADMIN_ROUTES.some((r) => pathname.startsWith(r))
   if (isAdminRoute) {
