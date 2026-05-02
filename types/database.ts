@@ -16,6 +16,11 @@ export type Profile = {
   push_notifications: boolean;
   next_of_kin_name: string | null;
   next_of_kin_contact: string | null;
+  user_type: 'young_person' | 'partner' | null;
+  status: 'active' | 'pending' | null;
+  organisation_name: string | null;
+  job_title: string | null;
+  phone: string | null;
   updated_at?: string;
 };
 
