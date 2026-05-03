@@ -126,6 +126,14 @@ function SignInForm() {
             {errors.password && (
               <p className="mt-1.5 text-xs text-red-500">{errors.password.message}</p>
             )}
+            <div className="flex justify-end mt-1.5">
+              <Link
+                href="/forgot-password"
+                className="text-xs text-[#FF790E] hover:underline font-medium"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           {/* Submit */}
