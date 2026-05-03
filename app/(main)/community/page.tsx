@@ -7,12 +7,14 @@ export default async function CommunityPage() {
   const supabase = await createClient()
   const { data: { user: authUser } } = await supabase.auth.getUser()
   const { profile } = await getCurrentUserWithProfile()
-  const posts = await fetchPosts(authUser?.id ?? null)
 
   const role = authUser?.app_metadata?.role ?? authUser?.user_metadata?.role
   const isAdmin = role === 'admin' || role === 'super_admin'
+  const isSuperAdmin = role === 'super_admin'
   const isActivePartner = profile?.user_type === 'partner' && profile?.status === 'active'
   const canPost = isAdmin || isActivePartner
+
+  const posts = await fetchPosts(authUser?.id ?? null, isAdmin)
 
   const currentUser = authUser
     ? {
@@ -38,6 +40,8 @@ export default async function CommunityPage() {
           currentUserId={authUser?.id ?? null}
           canPost={canPost}
           currentUser={currentUser}
+          isAdmin={isAdmin}
+          isSuperAdmin={isSuperAdmin}
         />
       </div>
     </main>

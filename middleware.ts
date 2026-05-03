@@ -83,7 +83,7 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = ADMIN_ROUTES.some((r) => pathname.startsWith(r))
   if (isAdminRoute) {
     const role = user.app_metadata?.role ?? user.user_metadata?.role
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'super_admin') {
       const notFoundUrl = request.nextUrl.clone()
       notFoundUrl.pathname = '/404'
       return NextResponse.redirect(notFoundUrl)

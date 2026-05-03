@@ -89,6 +89,7 @@ export function CreatePostDialog({ open, onClose, onCreated, currentUser }: Crea
         like_count: 0,
         comment_count: 0,
         is_liked: false,
+        hidden: false,
       }
 
       onCreated(newPost)

@@ -2,19 +2,18 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import type { PostWithMeta, CommentWithMeta } from '@/types/database'
 
-export async function fetchPosts(currentUserId: string | null): Promise<PostWithMeta[]> {
+export async function fetchPosts(currentUserId: string | null, isAdmin = false): Promise<PostWithMeta[]> {
   const supabase = await createClient()
 
   // 1. Posts — no join, avoids FK dependency on profiles
-  const { data: posts, error: postsError } = await supabase
+  const baseQuery = supabase
     .from('posts')
-    .select('id, content, image_url, created_at, user_id')
+    .select('id, content, image_url, created_at, user_id, hidden')
     .order('created_at', { ascending: false })
 
-  if (postsError) {
-    console.error('[fetchPosts] posts query error:', postsError)
-    return []
-  }
+  const { data: posts, error: postsError } = await (isAdmin ? baseQuery : baseQuery.eq('hidden', false))
+
+  if (postsError) return []
   if (!posts || posts.length === 0) return []
 
   // 2. Profiles for all authors — separate .in() query, no FK required
@@ -24,8 +23,6 @@ export async function fetchPosts(currentUserId: string | null): Promise<PostWith
     .select('id, full_name, avatar_url')
     .in('id', uniqueAuthorIds)
 
-  if (profilesError) console.error('[fetchPosts] profiles query error:', profilesError)
-
   const profileMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {}
   for (const p of profiles ?? []) profileMap[p.id] = p
 
@@ -33,8 +30,6 @@ export async function fetchPosts(currentUserId: string | null): Promise<PostWith
   const { data: allLikes, error: likesError } = await supabase
     .from('likes')
     .select('post_id')
-
-  if (likesError) console.error('[fetchPosts] likes query error:', likesError)
 
   const likeCountMap: Record<string, number> = {}
   for (const l of allLikes ?? []) {
@@ -45,8 +40,6 @@ export async function fetchPosts(currentUserId: string | null): Promise<PostWith
   const { data: allComments, error: commentsError } = await supabase
     .from('comments')
     .select('post_id')
-
-  if (commentsError) console.error('[fetchPosts] comments query error:', commentsError)
 
   const commentCountMap: Record<string, number> = {}
   for (const c of allComments ?? []) {
@@ -96,6 +89,7 @@ export async function fetchPosts(currentUserId: string | null): Promise<PostWith
       like_count: likeCountMap[post.id] ?? 0,
       comment_count: commentCountMap[post.id] ?? 0,
       is_liked: likedPostIds.has(post.id),
+      hidden: post.hidden ?? false,
     }
   })
 }
@@ -109,10 +103,7 @@ export async function fetchComments(postId: string): Promise<CommentWithMeta[]> 
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
 
-  if (commentsError) {
-    console.error('[fetchComments] error:', commentsError)
-    return []
-  }
+  if (commentsError) return []
   if (!comments || comments.length === 0) return []
 
   const uniqueUserIds = [...new Set(comments.map((c) => c.user_id))]
@@ -120,8 +111,6 @@ export async function fetchComments(postId: string): Promise<CommentWithMeta[]> 
     .from('profiles')
     .select('id, full_name, avatar_url')
     .in('id', uniqueUserIds)
-
-  if (profilesError) console.error('[fetchComments] profiles error:', profilesError)
 
   const profileMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {}
   for (const p of profiles ?? []) profileMap[p.id] = p

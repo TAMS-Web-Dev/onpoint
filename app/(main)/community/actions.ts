@@ -1,8 +1,16 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { fetchComments } from '@/lib/db/community'
 import type { CommentWithMeta } from '@/types/database'
+
+function service() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function toggleLike(
   postId: string
@@ -88,6 +96,30 @@ export async function createPost(
   if (error || !post) throw new Error(error?.message ?? 'Failed to create post')
 
   return post
+}
+
+export async function hidePost(postId: string, hidden: boolean): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const role = user.app_metadata?.role ?? user.user_metadata?.role
+  if (role !== 'admin' && role !== 'super_admin') throw new Error('Forbidden')
+
+  const { error } = await service().from('posts').update({ hidden }).eq('id', postId)
+  if (error) throw new Error(error.message)
+}
+
+export async function deletePost(postId: string): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const role = user.app_metadata?.role ?? user.user_metadata?.role
+  if (role !== 'super_admin') throw new Error('Forbidden')
+
+  const { error } = await service().from('posts').delete().eq('id', postId)
+  if (error) throw new Error(error.message)
 }
 
 export { fetchComments }

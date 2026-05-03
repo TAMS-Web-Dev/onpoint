@@ -30,6 +30,7 @@ export type Post = {
   content: string;
   image_url: string | null;
   created_at: string;
+  hidden: boolean;
 };
 
 export type Like = {
@@ -58,6 +59,7 @@ export type PostWithMeta = {
   like_count: number;
   comment_count: number;
   is_liked: boolean;
+  hidden: boolean;
 };
 
 export type CommentWithMeta = {

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BarChart2, Flag, Users, MessageSquare, ArrowRight } from 'lucide-react'
+import { BarChart2, Flag, Users, MessageSquare, ShieldPlus, Handshake, ArrowRight } from 'lucide-react'
 import {
   Card,
   CardHeader,
@@ -8,8 +8,20 @@ import {
   CardAction,
   CardContent,
 } from '@/components/ui/card'
+import { createClient } from '@/lib/supabase/server'
+import { createClient as serviceClient } from '@supabase/supabase-js'
 
-const CARDS = [
+interface DashboardCard {
+  href: string
+  icon: React.ElementType
+  iconBg: string
+  iconColor: string
+  title: string
+  description: string
+  badge?: number
+}
+
+const BASE_CARDS: DashboardCard[] = [
   {
     href: '/admin/usage',
     icon: BarChart2,
@@ -44,7 +56,49 @@ const CARDS = [
   },
 ]
 
-export default function AdminDashboard() {
+const SUPER_ADMIN_CARDS: DashboardCard[] = [
+  {
+    href: '/admin/admin-management',
+    icon: ShieldPlus,
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
+    title: 'Admin Management',
+    description: 'Add or remove admin accounts. Restricted to super admins only.',
+  },
+]
+
+export default async function AdminDashboard() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const role = user?.app_metadata?.role ?? user?.user_metadata?.role
+  const isSuperAdmin = role === 'super_admin'
+
+  // Pending partner count for badge
+  const { count: pendingCount } = await serviceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+    .from('profiles')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_type', 'partner')
+    .eq('status', 'pending')
+
+  const partnerCard: DashboardCard = {
+    href: '/admin/partner-requests',
+    icon: Handshake,
+    iconBg: 'bg-sky-100',
+    iconColor: 'text-sky-600',
+    title: 'Partner Requests',
+    description: 'Review and approve partner organisation registrations.',
+    badge: pendingCount ?? 0,
+  }
+
+  const cards: DashboardCard[] = [
+    ...BASE_CARDS,
+    partnerCard,
+    ...(isSuperAdmin ? SUPER_ADMIN_CARDS : []),
+  ]
+
   return (
     <div>
       <div className="mb-8">
@@ -55,7 +109,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {CARDS.map(({ href, icon: Icon, iconBg, iconColor, title, description }) => (
+        {cards.map(({ href, icon: Icon, iconBg, iconColor, title, description, badge }) => (
           <Link key={href} href={href} className="group/card-link outline-none">
             <Card className="h-full hover:ring-[#FF790E]/40 hover:shadow-md transition-all duration-200 cursor-pointer">
               <CardContent className="pt-4 pb-0">
@@ -64,8 +118,13 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
               <CardHeader>
-                <CardTitle className="text-[#2D1D44] font-semibold text-base">
+                <CardTitle className="text-[#2D1D44] font-semibold text-base flex items-center gap-2">
                   {title}
+                  {badge != null && badge > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-yellow-100 border border-yellow-300 text-yellow-800 text-xs font-bold px-2 py-0.5">
+                      {badge}
+                    </span>
+                  )}
                 </CardTitle>
                 <CardDescription className="leading-relaxed">
                   {description}

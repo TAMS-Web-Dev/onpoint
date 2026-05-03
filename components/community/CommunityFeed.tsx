@@ -3,13 +3,19 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
-import { Heart, MessageCircle, PenSquare, Share2, Users } from 'lucide-react'
+import { Heart, MessageCircle, PenSquare, Share2, Users, MoreVertical, EyeOff, Eye, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { CommentSheet } from '@/components/community/CommentSheet'
 import { CreatePostDialog } from '@/components/community/CreatePostDialog'
-import { toggleLike } from '@/app/(main)/community/actions'
+import { toggleLike, hidePost, deletePost } from '@/app/(main)/community/actions'
 import type { PostWithMeta } from '@/types/database'
 
 function getInitials(name: string | null) {
@@ -29,43 +35,88 @@ interface CommunityFeedProps {
   currentUserId: string | null
   canPost: boolean
   currentUser: CurrentUser | null
+  isAdmin: boolean
+  isSuperAdmin: boolean
 }
 
 function PostCard({
   post,
   isLoggedIn,
+  isAdmin,
+  isSuperAdmin,
   onLike,
   onOpenComments,
+  onHide,
+  onDelete,
 }: {
   post: PostWithMeta
   isLoggedIn: boolean
+  isAdmin: boolean
+  isSuperAdmin: boolean
   onLike: (postId: string) => void
   onOpenComments: (postId: string) => void
+  onHide: (postId: string, hidden: boolean) => void
+  onDelete: (postId: string) => void
 }) {
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true })
 
   return (
-    <article className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+    <article className={`bg-white rounded-2xl border border-border shadow-sm overflow-hidden transition-opacity ${post.hidden ? 'opacity-60' : ''}`}>
       <div className="p-5">
         {/* Author row */}
-        <div className="flex items-center gap-3 mb-4">
-          <Avatar className="w-10 h-10 flex-shrink-0">
-            <AvatarImage src={post.author_avatar ?? undefined} />
-            <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
-              {getInitials(post.author_name)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-secondary">
-              {post.author_name ?? 'OnPoint Member'}
-            </span>
-            {post.is_admin && (
-              <span className="bg-secondary/10 text-secondary text-xs font-semibold px-2 py-0.5 rounded-full">
-                Admin
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Avatar className="w-10 h-10 flex-shrink-0">
+              <AvatarImage src={post.author_avatar ?? undefined} />
+              <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
+                {getInitials(post.author_name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-secondary">
+                {post.author_name ?? 'OnPoint Member'}
               </span>
-            )}
-            <span className="text-xs text-muted-foreground">{timeAgo}</span>
+              {post.is_admin && (
+                <span className="bg-secondary/10 text-secondary text-xs font-semibold px-2 py-0.5 rounded-full">
+                  Admin
+                </span>
+              )}
+              {post.hidden && isAdmin && (
+                <span className="bg-yellow-100 border border-yellow-300 text-yellow-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                  Hidden
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground">{timeAgo}</span>
+            </div>
           </div>
+
+          {isAdmin && (
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <div className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex-shrink-0 cursor-pointer">
+                  <MoreVertical size={15} />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem
+                  onClick={() => onHide(post.id, !post.hidden)}
+                  className="gap-2 cursor-pointer"
+                >
+                  {post.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                  {post.hidden ? 'Show Post' : 'Hide Post'}
+                </DropdownMenuItem>
+                {isSuperAdmin && (
+                  <DropdownMenuItem
+                    onClick={() => onDelete(post.id)}
+                    className="gap-2 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                  >
+                    <Trash2 size={14} />
+                    Delete Post
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Body */}
@@ -135,6 +186,8 @@ export function CommunityFeed({
   currentUserId,
   canPost,
   currentUser,
+  isAdmin,
+  isSuperAdmin,
 }: CommunityFeedProps) {
   const [posts, setPosts] = useState<PostWithMeta[]>(initialPosts)
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null)
@@ -142,7 +195,6 @@ export function CommunityFeed({
   const isLoggedIn = !!currentUserId
 
   async function handleLike(postId: string) {
-    // Optimistic update
     setPosts((prev) =>
       prev.map((p) =>
         p.id === postId
@@ -156,7 +208,6 @@ export function CommunityFeed({
         prev.map((p) => (p.id === postId ? { ...p, is_liked: liked, like_count: likeCount } : p))
       )
     } catch {
-      // Roll back
       setPosts((prev) =>
         prev.map((p) =>
           p.id === postId
@@ -165,6 +216,29 @@ export function CommunityFeed({
         )
       )
       toast.error('Could not update like')
+    }
+  }
+
+  async function handleHide(postId: string, hidden: boolean) {
+    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, hidden } : p)))
+    try {
+      await hidePost(postId, hidden)
+      toast.success(hidden ? 'Post hidden.' : 'Post is now visible.')
+    } catch (err) {
+      setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, hidden: !hidden } : p)))
+      toast.error(err instanceof Error ? err.message : 'Could not update post')
+    }
+  }
+
+  async function handleDelete(postId: string) {
+    const deleted = posts.find((p) => p.id === postId)
+    setPosts((prev) => prev.filter((p) => p.id !== postId))
+    try {
+      await deletePost(postId)
+      toast.success('Post deleted.')
+    } catch (err) {
+      if (deleted) setPosts((prev) => [deleted, ...prev])
+      toast.error(err instanceof Error ? err.message : 'Could not delete post')
     }
   }
 
@@ -198,8 +272,12 @@ export function CommunityFeed({
               key={post.id}
               post={post}
               isLoggedIn={isLoggedIn}
+              isAdmin={isAdmin}
+              isSuperAdmin={isSuperAdmin}
               onLike={handleLike}
               onOpenComments={setActiveCommentPostId}
+              onHide={handleHide}
+              onDelete={handleDelete}
             />
           ))
         )}
