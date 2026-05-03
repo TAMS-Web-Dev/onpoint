@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { validatePassword } from '@/lib/validation/password'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -20,8 +21,9 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     setError(null)
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.')
+    const pwError = validatePassword(password)
+    if (pwError) {
+      setError(pwError)
       return
     }
     if (password !== confirm) {

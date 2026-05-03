@@ -17,9 +17,9 @@ interface Resource {
 
 const BOT_TEXT: Record<"tier1" | "tier2" | "tier3", string> = {
   tier3:
-    "I hear you, and I'm really worried about you right now.\nPlease reach out to someone tonight — call or text Childline (0800 1111, free, 24/7) or text SHOUT to 85258.\nYou matter, and you don't have to face this alone.",
+    "I hear you, and I'm really worried about you right now.\nPlease reach out to someone tonight - call or text Childline (0800 1111, free, 24/7) or text SHOUT to 85258.\nYou matter, and you don't have to face this alone.",
   tier2:
-    "What you've told me is important, and I want you to know: you've done nothing wrong. You deserve to be safe.\nChildline (0800 1111, free, 24/7) can talk this through with you confidentially — or if you're in immediate danger, please call 999.",
+    "What you've told me is important, and I want you to know: you've done nothing wrong. You deserve to be safe.\nChildline (0800 1111, free, 24/7) can talk this through with you confidentially - or if you're in immediate danger, please call 999.",
   tier1:
     "It sounds like you're going through something really hard right now.\nYou don't have to face this alone. There are people who want to help.",
 };
@@ -120,7 +120,7 @@ export function CrisisOverlay({ tier, category, onAcknowledge }: CrisisOverlayPr
                   <span className="text-base leading-none mt-0.5 flex-shrink-0">{r.emoji}</span>
                   <p className={`text-sm leading-snug ${TEXT_STYLES[tier]}`}>
                     <span className="font-semibold">{r.name}</span>
-                    {" — "}
+                    {" - "}
                     {r.detail}
                   </p>
                 </li>

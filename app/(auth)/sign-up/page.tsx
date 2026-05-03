@@ -9,13 +9,14 @@ import Image from "next/image";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { signUp, signUpPartner, type AuthState } from "../actions";
+import { passwordSchema } from "@/lib/validation/password";
 
 // ─── Young Person (unchanged) ────────────────────────────────────────────────
 
 const SignUpSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  password: passwordSchema,
   dateOfBirth: z.string().refine((val) => {
     const dob = new Date(val);
     if (isNaN(dob.getTime())) return false;
@@ -41,6 +42,7 @@ type SignUpValues = z.infer<typeof SignUpSchema>;
 function YoungPersonForm() {
   const [state, dispatch, isPending] = useActionState<AuthState, FormData>(signUp, { error: null });
   const [showPassword, setShowPassword] = useState(false);
+  const [emailNotifications, setEmailNotifications] = useState(false);
 
   const {
     register,
@@ -64,6 +66,7 @@ function YoungPersonForm() {
     formData.set("dateOfBirth", values.dateOfBirth);
     if (values.phoneNumber) formData.set("phoneNumber", values.phoneNumber);
     formData.set("postcode", values.postcode);
+    formData.set("emailNotifications", emailNotifications ? "true" : "false");
     startTransition(() => dispatch(formData));
   }
 
@@ -85,36 +88,35 @@ function YoungPersonForm() {
         {errors.fullName && <p className="mt-1.5 text-xs text-red-500">{errors.fullName.message}</p>}
       </div>
 
-      {/* Date of Birth + Postcode — side by side */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="dateOfBirth" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
-            Date of Birth
-          </label>
-          <input
-            id="dateOfBirth"
-            type="date"
-            max={new Date(new Date().setFullYear(new Date().getFullYear() - 13)).toISOString().split("T")[0]}
-            {...register("dateOfBirth")}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
-          />
-          {errors.dateOfBirth && <p className="mt-1.5 text-xs text-red-500">{errors.dateOfBirth.message}</p>}
-        </div>
+      {/* Date of Birth */}
+      <div>
+        <label htmlFor="dateOfBirth" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
+          Date of Birth
+        </label>
+        <input
+          id="dateOfBirth"
+          type="date"
+          max={new Date(new Date().setFullYear(new Date().getFullYear() - 13)).toISOString().split("T")[0]}
+          {...register("dateOfBirth")}
+          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
+        />
+        {errors.dateOfBirth && <p className="mt-1.5 text-xs text-red-500">{errors.dateOfBirth.message}</p>}
+      </div>
 
-        <div>
-          <label htmlFor="postcode" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
-            Postcode
-          </label>
-          <input
-            id="postcode"
-            type="text"
-            autoComplete="postal-code"
-            placeholder="e.g. B1 1BB"
-            {...register("postcode")}
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition uppercase"
-          />
-          {errors.postcode && <p className="mt-1.5 text-xs text-red-500">{errors.postcode.message}</p>}
-        </div>
+      {/* Postcode */}
+      <div>
+        <label htmlFor="postcode" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
+          Postcode
+        </label>
+        <input
+          id="postcode"
+          type="text"
+          autoComplete="postal-code"
+          placeholder="e.g. B1 1BB"
+          {...register("postcode")}
+          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition uppercase"
+        />
+        {errors.postcode && <p className="mt-1.5 text-xs text-red-500">{errors.postcode.message}</p>}
       </div>
 
       {/* Phone Number */}
@@ -159,7 +161,7 @@ function YoungPersonForm() {
             id="password"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="Min. 8 characters"
+            placeholder="Min. 12 characters"
             {...register("password")}
             className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
           />
@@ -173,6 +175,20 @@ function YoungPersonForm() {
           </button>
         </div>
         {errors.password && <p className="mt-1.5 text-xs text-red-500">{errors.password.message}</p>}
+      </div>
+
+      {/* Marketing consent */}
+      <div className="flex items-start gap-3">
+        <input
+          id="emailNotifications"
+          type="checkbox"
+          checked={emailNotifications}
+          onChange={(e) => setEmailNotifications(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#FF790E]"
+        />
+        <label htmlFor="emailNotifications" className="text-sm text-gray-600 leading-snug cursor-pointer">
+          I would like to receive updates and news from OnPoint via email (optional)
+        </label>
       </div>
 
       {/* Submit */}
@@ -190,8 +206,22 @@ function YoungPersonForm() {
 
 // ─── Partner Organisation ─────────────────────────────────────────────────────
 
+const ORGANISATION_TYPES = [
+  "Private/Limited Company",
+  "Faith Organisation",
+  "Charity",
+  "Local Authority",
+  "Combined Authority",
+  "Individual",
+  "Volunteer",
+  "Non Profit",
+  "Parent",
+  "Other",
+] as const;
+
 const PartnerSchema = z.object({
   organisationName: z.string().min(2, "Organisation name must be at least 2 characters."),
+  organisationType: z.string().min(1, "Please select an organisation type."),
   jobTitle: z.string().min(2, "Job title must be at least 2 characters."),
   phone: z
     .string()
@@ -200,7 +230,7 @@ const PartnerSchema = z.object({
       message: "Please enter a valid UK phone number.",
     }),
   email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  password: passwordSchema,
 });
 
 type PartnerValues = z.infer<typeof PartnerSchema>;
@@ -208,6 +238,7 @@ type PartnerValues = z.infer<typeof PartnerSchema>;
 function PartnerForm() {
   const [state, dispatch, isPending] = useActionState<AuthState, FormData>(signUpPartner, { error: null });
   const [showPassword, setShowPassword] = useState(false);
+  const [emailNotifications, setEmailNotifications] = useState(false);
 
   const {
     register,
@@ -226,10 +257,12 @@ function PartnerForm() {
   function onSubmit(values: PartnerValues) {
     const formData = new FormData();
     formData.set("organisationName", values.organisationName);
+    formData.set("organisationType", values.organisationType);
     formData.set("jobTitle", values.jobTitle);
     formData.set("phone", values.phone);
     formData.set("email", values.email);
     formData.set("password", values.password);
+    formData.set("emailNotifications", emailNotifications ? "true" : "false");
     startTransition(() => dispatch(formData));
   }
 
@@ -249,6 +282,25 @@ function PartnerForm() {
           className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
         />
         {errors.organisationName && <p className="mt-1.5 text-xs text-red-500">{errors.organisationName.message}</p>}
+      </div>
+
+      {/* Organisation Type */}
+      <div>
+        <label htmlFor="organisationType" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
+          Organisation Type
+        </label>
+        <select
+          id="organisationType"
+          {...register("organisationType")}
+          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
+          defaultValue=""
+        >
+          <option value="" disabled>Select organisation type</option>
+          {ORGANISATION_TYPES.map((type) => (
+            <option key={type} value={type}>{type}</option>
+          ))}
+        </select>
+        {errors.organisationType && <p className="mt-1.5 text-xs text-red-500">{errors.organisationType.message}</p>}
       </div>
 
       {/* Job Title */}
@@ -309,7 +361,7 @@ function PartnerForm() {
             id="partnerPassword"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="Min. 8 characters"
+            placeholder="Min. 12 characters"
             {...register("password")}
             className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
           />
@@ -323,6 +375,20 @@ function PartnerForm() {
           </button>
         </div>
         {errors.password && <p className="mt-1.5 text-xs text-red-500">{errors.password.message}</p>}
+      </div>
+
+      {/* Marketing consent */}
+      <div className="flex items-start gap-3">
+        <input
+          id="partnerEmailNotifications"
+          type="checkbox"
+          checked={emailNotifications}
+          onChange={(e) => setEmailNotifications(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#FF790E]"
+        />
+        <label htmlFor="partnerEmailNotifications" className="text-sm text-gray-600 leading-snug cursor-pointer">
+          I would like to receive updates and news from OnPoint via email (optional)
+        </label>
       </div>
 
       {/* Submit */}

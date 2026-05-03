@@ -72,6 +72,7 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
     return { error: result.error.issues[0].message };
   }
 
+  const emailNotifications = formData.get("emailNotifications") === "true";
   const { fullName, email, password, dateOfBirth, phoneNumber, postcode } = result.data;
   const supabase = await createClient();
 
@@ -93,6 +94,21 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
     return { error: error.message };
   }
 
+  if (data.user) {
+    try {
+      const service = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      await service.from("profiles").upsert({
+        id: data.user.id,
+        email_notifications: emailNotifications,
+      });
+    } catch {
+      // non-fatal
+    }
+  }
+
   // No session means Supabase email confirmation is enabled
   if (!data.session) {
     redirect("/check-email");
@@ -103,6 +119,7 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
 
 const PartnerSchema = z.object({
   organisationName: z.string().min(2, "Organisation name must be at least 2 characters."),
+  organisationType: z.string().min(1, "Please select an organisation type."),
   jobTitle: z.string().min(2, "Job title must be at least 2 characters."),
   phone: z
     .string()
@@ -117,6 +134,7 @@ const PartnerSchema = z.object({
 export async function signUpPartner(prevState: AuthState, formData: FormData): Promise<AuthState> {
   const raw = {
     organisationName: formData.get("organisationName") as string,
+    organisationType: formData.get("organisationType") as string,
     jobTitle: formData.get("jobTitle") as string,
     phone: formData.get("phone") as string,
     email: formData.get("email") as string,
@@ -128,7 +146,8 @@ export async function signUpPartner(prevState: AuthState, formData: FormData): P
     return { error: result.error.issues[0].message };
   }
 
-  const { organisationName, jobTitle, phone, email, password } = result.data;
+  const emailNotifications = formData.get("emailNotifications") === "true";
+  const { organisationName, organisationType, jobTitle, phone, email, password } = result.data;
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signUp({
@@ -163,8 +182,10 @@ export async function signUpPartner(prevState: AuthState, formData: FormData): P
         user_type: "partner",
         status: "pending",
         organisation_name: organisationName,
+        organisation_type: organisationType,
         job_title: jobTitle,
         phone,
+        email_notifications: emailNotifications,
       });
     } catch {
       // non-fatal — user_metadata fallback ensures data is available

@@ -44,7 +44,7 @@ export function ConsentBanner({ onAccept }: ConsentBannerProps) {
           onClick={onAccept}
           className="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold rounded-lg py-3 text-sm transition-colors"
         >
-          I understand — let&apos;s chat
+          I understand - let&apos;s chat
         </button>
       </div>
     </div>

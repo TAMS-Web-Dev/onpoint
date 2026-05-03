@@ -106,8 +106,8 @@ export function SettingsSheet({
               </label>
               <p className="text-xs text-gray-400 mt-0.5">
                 {profile.is_public
-                  ? "Public — anyone can view your profile"
-                  : "Members Only — only signed-in users can view"}
+                  ? "Public - anyone can view your profile"
+                  : "Members Only - only signed-in users can view"}
               </p>
             </div>
             <Switch

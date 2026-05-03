@@ -110,14 +110,14 @@ export default function PartnerRequestsClient({ initialPartners }: { initialPart
                 return (
                   <TableRow key={partner.id}>
                     <TableCell className="font-semibold text-gray-900">
-                      {partner.full_name ?? '—'}
+                      {partner.full_name ?? '-'}
                     </TableCell>
-                    <TableCell className="text-gray-700">{partner.email ?? '—'}</TableCell>
-                    <TableCell className="text-gray-700">{partner.organisation_name ?? '—'}</TableCell>
-                    <TableCell className="text-gray-700">{partner.job_title ?? '—'}</TableCell>
-                    <TableCell className="text-gray-700">{partner.phone ?? '—'}</TableCell>
+                    <TableCell className="text-gray-700">{partner.email ?? '-'}</TableCell>
+                    <TableCell className="text-gray-700">{partner.organisation_name ?? '-'}</TableCell>
+                    <TableCell className="text-gray-700">{partner.job_title ?? '-'}</TableCell>
+                    <TableCell className="text-gray-700">{partner.phone ?? '-'}</TableCell>
                     <TableCell className="text-gray-600">
-                      {partner.updated_at ? format(new Date(partner.updated_at), 'd MMM yyyy') : '—'}
+                      {partner.updated_at ? format(new Date(partner.updated_at), 'd MMM yyyy') : '-'}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={partner.status} />

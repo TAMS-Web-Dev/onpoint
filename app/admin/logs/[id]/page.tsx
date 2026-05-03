@@ -120,7 +120,7 @@ export default function LogDetailPage() {
             disabled={isConfirming}
             className="mt-6 w-full bg-[#2D1D44] hover:bg-[#2D1D44]/90 text-white"
           >
-            {isConfirming ? "Loading…" : "I understand — view transcript"}
+            {isConfirming ? "Loading…" : "I understand - view transcript"}
           </Button>
         </div>
       </div>

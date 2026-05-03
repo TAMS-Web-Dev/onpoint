@@ -26,7 +26,7 @@ type Message = {
 const RESOURCE_CARDS: Record<string, ResourceCardProps> = {
   "mental-health": {
     title: "Mental Health Support",
-    description: "Free, confidential mental health support for young people. No waiting list — open evenings and weekends.",
+    description: "Free, confidential mental health support for young people. No waiting list - open evenings and weekends.",
     url: "https://www.kooth.com",
     linkLabel: "Visit Kooth",
   },

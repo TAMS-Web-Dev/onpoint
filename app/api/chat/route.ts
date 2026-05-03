@@ -65,7 +65,7 @@ export async function POST(req: Request): Promise<Response> {
 
     // ── STEP 2: Mock mode ─────────────────────────────────────────────────────
     if (!process.env.ANTHROPIC_API_KEY) {
-      const mockText = "Mock mode active — API key pending. This is a placeholder response from Ask OnPoint.";
+      const mockText = "Mock mode active - API key pending. This is a placeholder response from Ask OnPoint.";
       const encoder = new TextEncoder();
       const mockStream = new ReadableStream({
         async start(controller) {

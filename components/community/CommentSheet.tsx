@@ -76,7 +76,7 @@ export function CommentSheet({ postId, onClose, onCommentAdded }: CommentSheetPr
             </div>
           ) : comments.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">
-              No comments yet — be the first!
+              No comments yet - be the first!
             </p>
           ) : (
             <div className="flex flex-col gap-5">

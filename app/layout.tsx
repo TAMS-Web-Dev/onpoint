@@ -18,7 +18,7 @@ const montserrat = localFont({
 
 export const metadata: Metadata = {
   title: "OnPoint Youth Portal",
-  description: "OnPoint — connecting young people to opportunities.",
+  description: "OnPoint - connecting young people to opportunities.",
 };
 
 export default function RootLayout({

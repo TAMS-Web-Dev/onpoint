@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { validatePassword } from '@/lib/validation/password'
 import { format } from 'date-fns'
 import { Plus, Trash2, Loader2, ShieldCheck, Crown } from 'lucide-react'
 import { toast } from 'sonner'
@@ -57,11 +58,18 @@ export default function AdminManagementClient({ initialAdmins, currentUserId }: 
   const [addOpen, setAddOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function handleAdd() {
     if (!email.trim() || !password.trim()) return
+    const pwError = validatePassword(password)
+    if (pwError) {
+      setPasswordError(pwError)
+      return
+    }
+    setPasswordError(null)
     setAdding(true)
     try {
       const res = await fetch('/api/admin/admin-management', {
@@ -74,6 +82,7 @@ export default function AdminManagementClient({ initialAdmins, currentUserId }: 
       setAdmins((prev) => [data.admin, ...prev])
       setEmail('')
       setPassword('')
+      setPasswordError(null)
       setAddOpen(false)
       toast.success(`Admin account created for ${data.admin.email}`)
     } catch (err) {
@@ -139,7 +148,7 @@ export default function AdminManagementClient({ initialAdmins, currentUserId }: 
                 return (
                   <TableRow key={admin.id}>
                     <TableCell className="font-semibold text-gray-900">{admin.email}</TableCell>
-                    <TableCell className="text-gray-600">{admin.full_name ?? '—'}</TableCell>
+                    <TableCell className="text-gray-600">{admin.full_name ?? '-'}</TableCell>
                     <TableCell>
                       <RoleBadge role={admin.role} />
                     </TableCell>
@@ -171,7 +180,7 @@ export default function AdminManagementClient({ initialAdmins, currentUserId }: 
       </div>
 
       {/* Add Admin Dialog */}
-      <Dialog open={addOpen} onOpenChange={(o) => { if (!o) { setEmail(''); setPassword('') } setAddOpen(o) }}>
+      <Dialog open={addOpen} onOpenChange={(o) => { if (!o) { setEmail(''); setPassword(''); setPasswordError(null) } setAddOpen(o) }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Add Admin</DialogTitle>
@@ -192,10 +201,13 @@ export default function AdminManagementClient({ initialAdmins, currentUserId }: 
               <Input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 8 characters"
+                onChange={(e) => { setPassword(e.target.value); setPasswordError(null) }}
+                placeholder="Min. 12 characters"
                 autoComplete="new-password"
               />
+              {passwordError && (
+                <p className="mt-1.5 text-xs text-red-500">{passwordError}</p>
+              )}
             </div>
           </div>
           <DialogFooter className="gap-2">

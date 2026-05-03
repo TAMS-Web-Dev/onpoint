@@ -20,10 +20,13 @@ const CATEGORIES = ['All', 'Workshop', 'Networking', 'Focus Group', 'Education']
 const LOCATION_OPTIONS = [
   { label: 'All Locations',  value: 'all'           },
   { label: 'Birmingham',     value: 'Birmingham'    },
-  { label: 'Wolverhampton',  value: 'Wolverhampton' },
-  { label: 'Walsall',        value: 'Walsall'       },
+  { label: 'Coventry',       value: 'Coventry'      },
   { label: 'Dudley',         value: 'Dudley'        },
-  { label: 'Online',         value: 'Online'        },
+  { label: 'Sandwell',       value: 'Sandwell'      },
+  { label: 'Solihull',       value: 'Solihull'      },
+  { label: 'Walsall',        value: 'Walsall'       },
+  { label: 'Wolverhampton',  value: 'Wolverhampton' },
+  { label: 'Other',          value: 'Other'         },
 ]
 
 const DATE_OPTIONS = [

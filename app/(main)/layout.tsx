@@ -27,7 +27,7 @@ export default async function MainLayout({
       <Navbar initials={initials} />
       {children}
       <AskOnPointWidget isLoggedIn={isLoggedIn} />
-      <Footer />
+      <Footer isLoggedIn={isLoggedIn} />
     </>
   )
 }

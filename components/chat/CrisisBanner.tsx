@@ -53,7 +53,7 @@ export function CrisisBanner() {
             aria-label="Text SHOUT on 85258"
           >
             <MessageSquare size={11} aria-hidden="true" className="text-rose-400" />
-            <span>SHOUT — Text <span className="font-semibold">85258</span></span>
+            <span>SHOUT: Text <span className="font-semibold">85258</span></span>
           </span>
 
         </div>

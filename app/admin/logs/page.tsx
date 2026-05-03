@@ -92,7 +92,7 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
             {total}
           </span>
         </div>
-        <p className="text-sm text-gray-500 mt-1">All platform conversations — anonymised</p>
+        <p className="text-sm text-gray-500 mt-1">All platform conversations, anonymised</p>
         <hr className="mt-4 border-border" />
       </div>
 
@@ -125,7 +125,7 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
                     <TableCell className="font-mono">{session.id.slice(0, 8)}…</TableCell>
                     <TableCell className="">{format(new Date(session.created_at), "d MMM yyyy, HH:mm")}</TableCell>
                     <TableCell className="">
-                      {session.last_message_at ? format(new Date(session.last_message_at), "d MMM yyyy, HH:mm") : "—"}
+                      {session.last_message_at ? format(new Date(session.last_message_at), "d MMM yyyy, HH:mm") : "-"}
                     </TableCell>
                     <TableCell className="text-gray-900 font-medium">{session.message_count}</TableCell>
                     <TableCell>
@@ -151,7 +151,7 @@ export default async function LogsPage({ searchParams }: { searchParams: Promise
                           </span>
                         )
                       ) : (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-gray-300">-</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">

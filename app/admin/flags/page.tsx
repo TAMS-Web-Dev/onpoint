@@ -51,7 +51,7 @@ function StatusBadge({ reviewed }: { reviewed: boolean }) {
 }
 
 function AssessmentBadge({ value }: { value: string | null }) {
-  if (!value) return <span className="text-gray-400">—</span>;
+  if (!value) return <span className="text-gray-400">-</span>;
   if (value === "true-crisis")
     return (
       <span className="inline-flex items-center rounded-full border-2 border-red-200 bg-red-50 text-red-600 text-xs font-semibold px-2.5 py-0.5">

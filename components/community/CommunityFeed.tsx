@@ -175,7 +175,7 @@ function EmptyState() {
       <Users size={48} className="text-foreground/20 mb-4" />
       <h3 className="text-secondary font-semibold text-lg">No posts yet</h3>
       <p className="mt-1.5 text-foreground/50 text-sm max-w-xs">
-        Check back soon — the community feed is just getting started.
+        Check back soon - the community feed is just getting started.
       </p>
     </div>
   )

@@ -295,7 +295,7 @@ export default function FlagDetailPage() {
       <section className="flex flex-col gap-3 rounded-xl border border-border p-5 bg-white">
         <div>
           <h2 className="font-semibold text-[#2D1D44]">Safeguarding Protocol Checklist</h2>
-          <p className="text-sm mt-0.5 text-muted-foreground">Protocol Section 6.1 — tick each step as completed</p>
+          <p className="text-sm mt-0.5 text-muted-foreground">Protocol Section 6.1 - tick each step as completed</p>
         </div>
 
         <ul className="flex flex-col gap-2.5 mt-4">

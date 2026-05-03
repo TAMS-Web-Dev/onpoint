@@ -21,7 +21,7 @@ export function ResourceCard({ title, description, url, linkLabel = "Learn More"
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`${linkLabel} — ${title} (opens in new tab)`}
+          aria-label={`${linkLabel} - ${title} (opens in new tab)`}
           className="mt-0.5 self-start inline-flex items-center gap-1.5 text-xs font-semibold text-[#FF790E] hover:underline focus-visible:underline outline-none transition-colors"
         >
           {linkLabel}

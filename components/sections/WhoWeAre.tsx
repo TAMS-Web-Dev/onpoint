@@ -27,7 +27,7 @@ export default function WhoWeAre() {
             <p className="mt-5 text-foreground/75 text-base leading-relaxed max-w-lg">
               OnPoint is an independent space run by teens &amp; young people. We&apos;re speaking up for our
               communities about key people, policies, projects, funding or ideas helping to keep our communities safer.
-              OnPoint is a positive ideas platform — a space to empower young people to share points of view on
+              OnPoint is a positive ideas platform - a space to empower young people to share points of view on
               important issues with solutions. Important doesn&apos;t have to mean boring!
             </p>
 

@@ -232,7 +232,7 @@ export default function UsersClient({ isSuperAdmin }: { isSuperAdmin: boolean })
               users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-semibold text-gray-900">{user.email}</TableCell>
-                  <TableCell className="text-gray-900">{user.full_name ?? "—"}</TableCell>
+                  <TableCell className="text-gray-900">{user.full_name ?? "-"}</TableCell>
                   <TableCell className="text-gray-900">{format(new Date(user.created_at), "d MMM yyyy")}</TableCell>
                   <TableCell className="text-gray-900">
                     {user.last_sign_in_at ? format(new Date(user.last_sign_in_at), "d MMM yyyy") : "Never"}

@@ -14,32 +14,34 @@ const SOCIAL = [
   { icon: Facebook, label: "Facebook", href: "https://www.facebook.com/OnPointWM" },
 ];
 
-export default function Footer() {
+export default function Footer({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   return (
     <footer className="bg-[#2C2C2C] text-white">
-      {/* ── CTA Banner ── */}
-      <div className="border-b border-white/10 py-16 lg:py-20">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">Ready to Join Our Community?</h2>
-          <p className="mt-4 text-white/60 text-base max-w-lg mx-auto leading-relaxed">
-            Take the first step towards connecting with other creative minds and discovering new opportunities.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/sign-up"
-              className="inline-flex items-center gap-2 bg-primary text-white rounded-lg px-6 py-2.5 text-sm font-semibold hover:bg-primary/90 active:scale-95 transition-all duration-200"
-            >
-              Join Now
-            </Link>
-            <Link
-              href="/more"
-              className="inline-flex items-center gap-2 rounded-lg border border-white/40 text-white px-6 py-2.5 text-sm font-semibold hover:bg-white/10 active:scale-95 transition-all duration-200"
-            >
-              Learn More
-            </Link>
+      {/* ── CTA Banner — hidden for logged-in users ── */}
+      {!isLoggedIn && (
+        <div className="border-b border-white/10 py-16 lg:py-20">
+          <div className="max-w-7xl mx-auto px-4 lg:px-8 text-center">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">Ready to Join Our Community?</h2>
+            <p className="mt-4 text-white/60 text-base max-w-lg mx-auto leading-relaxed">
+              Take the first step towards connecting with other creative minds and discovering new opportunities.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Link
+                href="/sign-up"
+                className="inline-flex items-center gap-2 bg-primary text-white rounded-lg px-6 py-2.5 text-sm font-semibold hover:bg-primary/90 active:scale-95 transition-all duration-200"
+              >
+                Join Now
+              </Link>
+              <Link
+                href="/more"
+                className="inline-flex items-center gap-2 rounded-lg border border-white/40 text-white px-6 py-2.5 text-sm font-semibold hover:bg-white/10 active:scale-95 transition-all duration-200"
+              >
+                Learn More
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── Footer Body ── */}
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-14">
@@ -119,11 +121,11 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="tel:+441234567890"
+                  href="tel:07707538749"
                   className="flex items-center gap-2.5 text-white/55 text-sm hover:text-primary transition-colors duration-200"
                 >
                   <Phone size={14} className="text-primary flex-shrink-0" />
-                  +44 123 456 7890
+                  07707 538 749
                 </a>
               </li>
             </ul>
