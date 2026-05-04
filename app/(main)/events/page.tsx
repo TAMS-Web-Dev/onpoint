@@ -1,14 +1,14 @@
 import EventsClient from '@/components/sections/EventsClient'
-import { PLACEHOLDER_EVENTS } from '@/lib/placeholder-data'
+import { fetchEvents } from '@/lib/eventbrite'
 import { getCurrentUserWithProfile } from '@/lib/db/profile'
 
-export default async function EventsPage() {
-  // Future Supabase swap: replace this line only
-  // const events = await supabase.from('events').select('*')
-  const events = PLACEHOLDER_EVENTS
+export const revalidate = 3600
 
-  const { user } = await getCurrentUserWithProfile()
-  const isLoggedIn = !!user
+export default async function EventsPage() {
+  const [events, { user }] = await Promise.all([
+    fetchEvents(),
+    getCurrentUserWithProfile(),
+  ])
 
   return (
     <main className="bg-background min-h-screen">
@@ -23,7 +23,7 @@ export default async function EventsPage() {
         </p>
 
         {/* ── Interactive Filter + Grid ── */}
-        <EventsClient initialEvents={events} isLoggedIn={isLoggedIn} />
+        <EventsClient initialEvents={events} />
 
       </div>
     </main>

@@ -99,7 +99,7 @@ export async function fetchComments(postId: string): Promise<CommentWithMeta[]> 
 
   const { data: comments, error: commentsError } = await supabase
     .from('comments')
-    .select('id, content, created_at, user_id')
+    .select('id, content, created_at, user_id, parent_id')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
 
@@ -107,7 +107,7 @@ export async function fetchComments(postId: string): Promise<CommentWithMeta[]> 
   if (!comments || comments.length === 0) return []
 
   const uniqueUserIds = [...new Set(comments.map((c) => c.user_id))]
-  const { data: profiles, error: profilesError } = await supabase
+  const { data: profiles } = await supabase
     .from('profiles')
     .select('id, full_name, avatar_url')
     .in('id', uniqueUserIds)
@@ -115,11 +115,26 @@ export async function fetchComments(postId: string): Promise<CommentWithMeta[]> 
   const profileMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {}
   for (const p of profiles ?? []) profileMap[p.id] = p
 
-  return comments.map((c) => ({
+  const mapped: CommentWithMeta[] = comments.map((c) => ({
     id: c.id,
     content: c.content,
     created_at: c.created_at,
     author_name: profileMap[c.user_id]?.full_name ?? null,
     author_avatar: profileMap[c.user_id]?.avatar_url ?? null,
+    parent_id: c.parent_id ?? null,
+    replies: [],
   }))
+
+  // Build reply map then attach to top-level comments
+  const replyMap: Record<string, CommentWithMeta[]> = {}
+  for (const c of mapped) {
+    if (c.parent_id) {
+      replyMap[c.parent_id] = replyMap[c.parent_id] ?? []
+      replyMap[c.parent_id].push(c)
+    }
+  }
+
+  return mapped
+    .filter((c) => c.parent_id === null)
+    .map((c) => ({ ...c, replies: replyMap[c.id] ?? [] }))
 }

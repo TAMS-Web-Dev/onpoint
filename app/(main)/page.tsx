@@ -12,10 +12,10 @@ export default async function HomePage() {
 
   return (
     <main>
-      <Hero />
+      <Hero isLoggedIn={isLoggedIn} />
       <WhoWeAre />
       <HowItWorks />
-      <UpcomingEvents isLoggedIn={isLoggedIn} />
+      <UpcomingEvents />
       <SuccessStories />
       <ShowcaseTalent />
     </main>

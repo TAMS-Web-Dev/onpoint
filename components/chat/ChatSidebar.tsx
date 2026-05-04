@@ -1,7 +1,8 @@
 "use client";
 
 import { format, isToday, isYesterday } from "date-fns";
-import { PenSquare, MessageSquare } from "lucide-react";
+import { PenSquare, MessageSquare, Home } from "lucide-react";
+import Link from "next/link";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useChatStore, type SessionPreview } from "@/store/chat-store";
@@ -46,13 +47,22 @@ export function ChatSidebar({ onNavigate }: ChatSidebarProps) {
         <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground select-none">
           Conversations
         </span>
-        <button
-          onClick={handleNewChat}
-          aria-label="New chat"
-          className="flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-border transition-colors"
-        >
-          <PenSquare size={15} />
-        </button>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/"
+            aria-label="Go to home"
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-border transition-colors"
+          >
+            <Home size={15} />
+          </Link>
+          <button
+            onClick={handleNewChat}
+            aria-label="New chat"
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-border transition-colors"
+          >
+            <PenSquare size={15} />
+          </button>
+        </div>
       </div>
 
       {/* New Chat button */}

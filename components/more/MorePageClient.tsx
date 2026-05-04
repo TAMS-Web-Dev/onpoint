@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ChevronRight, Flame, LogOut, Settings, Trash2, User } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { signOut } from '@/app/(auth)/actions'
 import { fetchProfile, updateUserProfile } from '@/app/(main)/more/actions'
 import { ProfileSheet } from '@/components/more/ProfileSheet'
@@ -87,11 +88,12 @@ export function MorePageClient({ initialProfile, userId, userEmail }: MorePageCl
     <>
       {/* Profile Card */}
       <div className="mt-8 bg-white rounded-xl border border-border shadow-sm p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-extrabold text-xl">
+        <Avatar className="w-14 h-14 flex-shrink-0">
+          <AvatarImage src={profile.avatar_url ?? undefined} />
+          <AvatarFallback className="bg-primary text-white font-extrabold text-xl">
             {getInitials(profile.full_name)}
-          </span>
-        </div>
+          </AvatarFallback>
+        </Avatar>
         <div className="min-w-0">
           <p className="text-secondary font-semibold text-base leading-tight truncate">
             {profile.full_name ?? 'OnPoint Member'}
@@ -224,6 +226,12 @@ export function MorePageClient({ initialProfile, userId, userEmail }: MorePageCl
           setProfileOpen(false)
         }}
         isPending={mutation.isPending}
+        userId={userId}
+        onAvatarUpdate={(url) => {
+          queryClient.setQueryData<Profile>(['profile', userId], (old) =>
+            old ? { ...old, avatar_url: url } : old
+          )
+        }}
       />
       <SettingsSheet
         open={settingsOpen}

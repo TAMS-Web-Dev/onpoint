@@ -68,6 +68,8 @@ export type CommentWithMeta = {
   created_at: string;
   author_name: string | null;
   author_avatar: string | null;
+  parent_id: string | null;
+  replies: CommentWithMeta[];
 };
 
 export type Database = {

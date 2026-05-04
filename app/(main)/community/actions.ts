@@ -42,7 +42,8 @@ export async function toggleLike(
 
 export async function addComment(
   postId: string,
-  content: string
+  content: string,
+  parentId?: string
 ): Promise<CommentWithMeta> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -51,16 +52,14 @@ export async function addComment(
   const trimmed = content.trim()
   if (!trimmed) throw new Error('Comment cannot be empty')
 
-  // Step 1 — insert comment, select only its own columns
   const { data: comment, error } = await supabase
     .from('comments')
-    .insert({ post_id: postId, user_id: user.id, content: trimmed })
+    .insert({ post_id: postId, user_id: user.id, content: trimmed, parent_id: parentId ?? null })
     .select('id, content, created_at, user_id')
     .single()
 
   if (error || !comment) throw new Error(error?.message ?? 'Failed to post comment')
 
-  // Step 2 — fetch author profile separately
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name, avatar_url')
@@ -73,6 +72,8 @@ export async function addComment(
     created_at: comment.created_at,
     author_name: profile?.full_name ?? null,
     author_avatar: profile?.avatar_url ?? null,
+    parent_id: parentId ?? null,
+    replies: [],
   }
 }
 

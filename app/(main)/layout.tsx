@@ -20,11 +20,12 @@ export default async function MainLayout({
 }) {
   const { profile } = await getCurrentUserWithProfile()
   const initials = profile ? getInitials(profile.full_name) : null
+  const avatarUrl = profile?.avatar_url ?? null
   const isLoggedIn = !!profile
 
   return (
     <>
-      <Navbar initials={initials} />
+      <Navbar initials={initials} avatarUrl={avatarUrl} />
       {children}
       <AskOnPointWidget isLoggedIn={isLoggedIn} />
       <Footer isLoggedIn={isLoggedIn} />

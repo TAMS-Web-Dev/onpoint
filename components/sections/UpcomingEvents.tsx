@@ -1,15 +1,11 @@
 import Link from 'next/link'
-import { PLACEHOLDER_EVENTS } from '@/lib/placeholder-data'
+import { CalendarX } from 'lucide-react'
+import { fetchEvents } from '@/lib/eventbrite'
 import EventCard from '@/components/shared/EventCard'
 
-interface UpcomingEventsProps {
-  isLoggedIn: boolean
-}
-
-export default function UpcomingEvents({ isLoggedIn }: UpcomingEventsProps) {
-  // Future Supabase swap: replace this line only
-  // const { data: events } = await supabase.from('events').select('*').limit(4)
-  const events = PLACEHOLDER_EVENTS
+export default async function UpcomingEvents() {
+  const events = await fetchEvents()
+  const upcoming = events.slice(0, 3)
 
   return (
     <section className="bg-background py-20 lg:py-28">
@@ -37,12 +33,22 @@ export default function UpcomingEvents({ isLoggedIn }: UpcomingEventsProps) {
           </Link>
         </div>
 
-        {/* ── Events Grid ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => (
-            <EventCard key={event.id} event={event} isLoggedIn={isLoggedIn} />
-          ))}
-        </div>
+        {/* ── Events Grid or Empty State ── */}
+        {upcoming.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {upcoming.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <CalendarX size={40} className="text-foreground/20 mb-4" />
+            <p className="text-secondary font-semibold">No upcoming events right now</p>
+            <p className="mt-1.5 text-foreground/50 text-sm max-w-xs">
+              Check back soon - we&apos;re always adding new events and workshops.
+            </p>
+          </div>
+        )}
 
       </div>
     </section>

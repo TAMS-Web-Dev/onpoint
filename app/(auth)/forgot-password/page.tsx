@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Loader2, MailCheck } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { sendPasswordReset } from '../actions'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -23,14 +23,10 @@ export default function ForgotPasswordPage() {
 
     setLoading(true)
     try {
-      const supabase = createClient()
-      const { error: sbError } = await supabase.auth.resetPasswordForEmail(trimmed, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
-      })
-      if (sbError) throw sbError
+      await sendPasswordReset(trimmed)
       setSent(true)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+    } catch {
+      setSent(true)
     } finally {
       setLoading(false)
     }
@@ -56,8 +52,7 @@ export default function ForgotPasswordPage() {
             </div>
             <h1 className="text-xl font-extrabold text-[#2D1D44] mb-2">Check your email</h1>
             <p className="text-sm text-gray-500 mb-6">
-              We&apos;ve sent a password reset link to <span className="font-semibold text-gray-700">{email}</span>.
-              Check your inbox and follow the link to reset your password.
+              If an account exists with this email, you will receive a reset link shortly.
             </p>
             <Link href="/sign-in" className="text-sm text-[#FF790E] font-semibold hover:underline">
               Back to Sign In

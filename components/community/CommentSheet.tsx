@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { Loader2, Send } from 'lucide-react'
+import { CornerDownRight, Loader2, Send, X } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Sheet,
@@ -33,6 +33,11 @@ export function CommentSheet({ postId, onClose, onCommentAdded }: CommentSheetPr
   const [loading, setLoading] = useState(false)
   const [text, setText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  const [replyTo, setReplyTo] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [replySubmitting, setReplySubmitting] = useState(false)
+
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -62,6 +67,26 @@ export function CommentSheet({ postId, onClose, onCommentAdded }: CommentSheetPr
     }
   }
 
+  async function handleReply(parentId: string) {
+    if (!postId || !replyText.trim()) return
+    setReplySubmitting(true)
+    try {
+      const newReply = await addComment(postId, replyText.trim(), parentId)
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === parentId ? { ...c, replies: [...c.replies, newReply] } : c
+        )
+      )
+      setReplyTo(null)
+      setReplyText('')
+      onCommentAdded()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to post reply')
+    } finally {
+      setReplySubmitting(false)
+    }
+  }
+
   return (
     <Sheet open={!!postId} onOpenChange={(open) => { if (!open) onClose() }}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
@@ -81,26 +106,108 @@ export function CommentSheet({ postId, onClose, onCommentAdded }: CommentSheetPr
           ) : (
             <div className="flex flex-col gap-5">
               {comments.map((c) => (
-                <div key={c.id} className="flex gap-3">
-                  <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarImage src={c.author_avatar ?? undefined} />
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                      {getInitials(c.author_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-secondary">
-                        {c.author_name ?? 'Member'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                      </span>
+                <div key={c.id}>
+                  {/* Top-level comment */}
+                  <div className="flex gap-3">
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarImage src={c.author_avatar ?? undefined} />
+                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                        {getInitials(c.author_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-secondary">
+                          {c.author_name ?? 'Member'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-foreground/80 leading-relaxed mt-0.5 break-words">
+                        {c.content}
+                      </p>
+                      <button
+                        onClick={() => {
+                          setReplyTo(replyTo === c.id ? null : c.id)
+                          setReplyText('')
+                        }}
+                        className="mt-1.5 text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                      >
+                        <CornerDownRight size={11} />
+                        Reply
+                      </button>
                     </div>
-                    <p className="text-sm text-foreground/80 leading-relaxed mt-0.5 break-words">
-                      {c.content}
-                    </p>
                   </div>
+
+                  {/* Inline reply input */}
+                  {replyTo === c.id && (
+                    <div className="ml-11 mt-2 flex flex-col gap-1.5">
+                      <Textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Write a reply…"
+                        rows={2}
+                        className="resize-none text-sm"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleReply(c.id)
+                          if (e.key === 'Escape') { setReplyTo(null); setReplyText('') }
+                        }}
+                      />
+                      <div className="flex items-center gap-2 self-end">
+                        <button
+                          onClick={() => { setReplyTo(null); setReplyText('') }}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                        >
+                          <X size={11} />
+                          Cancel
+                        </button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleReply(c.id)}
+                          disabled={replySubmitting || !replyText.trim()}
+                          className="h-7 text-xs px-3"
+                        >
+                          {replySubmitting ? (
+                            <Loader2 size={12} className="animate-spin mr-1" />
+                          ) : (
+                            <Send size={12} className="mr-1" />
+                          )}
+                          {replySubmitting ? 'Posting…' : 'Reply'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Replies */}
+                  {c.replies.length > 0 && (
+                    <div className="ml-11 mt-3 flex flex-col gap-3">
+                      {c.replies.map((reply) => (
+                        <div key={reply.id} className="flex gap-2">
+                          <Avatar className="w-6 h-6 flex-shrink-0">
+                            <AvatarImage src={reply.author_avatar ?? undefined} />
+                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                              {getInitials(reply.author_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                              <span className="text-xs font-semibold text-secondary">
+                                {reply.author_name ?? 'Member'}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
+                              </span>
+                            </div>
+                            <p className="text-xs text-foreground/70 leading-relaxed mt-0.5 break-words">
+                              {reply.content}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
               <div ref={bottomRef} />

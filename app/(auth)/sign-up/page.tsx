@@ -16,6 +16,10 @@ import { passwordSchema } from "@/lib/validation/password";
 const SignUpSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
+  recoveryEmail: z.string().optional().refine(
+    (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    'Please enter a valid recovery email address.'
+  ),
   password: passwordSchema,
   dateOfBirth: z.string().refine((val) => {
     const dob = new Date(val);
@@ -62,6 +66,7 @@ function YoungPersonForm() {
     const formData = new FormData();
     formData.set("fullName", values.fullName);
     formData.set("email", values.email);
+    if (values.recoveryEmail) formData.set("recoveryEmail", values.recoveryEmail);
     formData.set("password", values.password);
     formData.set("dateOfBirth", values.dateOfBirth);
     if (values.phoneNumber) formData.set("phoneNumber", values.phoneNumber);
@@ -124,14 +129,19 @@ function YoungPersonForm() {
         <label htmlFor="phoneNumber" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
           Phone Number <span className="text-gray-400 font-normal">(optional)</span>
         </label>
-        <input
-          id="phoneNumber"
-          type="tel"
-          autoComplete="tel"
-          placeholder="e.g. 07700 900000"
-          {...register("phoneNumber")}
-          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
-        />
+        <div className="flex border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#FF790E] focus-within:border-transparent transition">
+          <span className="flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-r border-gray-200 select-none flex-shrink-0">
+            +44
+          </span>
+          <input
+            id="phoneNumber"
+            type="tel"
+            autoComplete="tel"
+            placeholder="07700 900000"
+            {...register("phoneNumber")}
+            className="flex-1 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
+          />
+        </div>
         {errors.phoneNumber && <p className="mt-1.5 text-xs text-red-500">{errors.phoneNumber.message}</p>}
       </div>
 
@@ -149,6 +159,23 @@ function YoungPersonForm() {
           className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
         />
         {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>}
+      </div>
+
+      {/* Recovery Email */}
+      <div>
+        <label htmlFor="recoveryEmail" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
+          Recovery email <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <input
+          id="recoveryEmail"
+          type="email"
+          autoComplete="email"
+          placeholder="backup@example.com"
+          {...register("recoveryEmail")}
+          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
+        />
+        <p className="mt-1 text-xs text-gray-400">Used if you lose access to your main email</p>
+        {errors.recoveryEmail && <p className="mt-1 text-xs text-red-500">{errors.recoveryEmail.message}</p>}
       </div>
 
       {/* Password */}
@@ -230,6 +257,10 @@ const PartnerSchema = z.object({
       message: "Please enter a valid UK phone number.",
     }),
   email: z.string().email("Please enter a valid email address."),
+  recoveryEmail: z.string().optional().refine(
+    (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    'Please enter a valid recovery email address.'
+  ),
   password: passwordSchema,
 });
 
@@ -239,14 +270,19 @@ function PartnerForm() {
   const [state, dispatch, isPending] = useActionState<AuthState, FormData>(signUpPartner, { error: null });
   const [showPassword, setShowPassword] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
+  const [organisationTypeOther, setOrganisationTypeOther] = useState('');
+  const [orgTypeOtherError, setOrgTypeOtherError] = useState('');
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<PartnerValues>({
     resolver: zodResolver(PartnerSchema),
   });
+
+  const watchedOrgType = watch('organisationType');
 
   useEffect(() => {
     if (state.error) {
@@ -255,12 +291,20 @@ function PartnerForm() {
   }, [state]);
 
   function onSubmit(values: PartnerValues) {
+    const finalOrgType =
+      values.organisationType === 'Other' ? organisationTypeOther.trim() : values.organisationType;
+    if (!finalOrgType) {
+      setOrgTypeOtherError('Please specify your organisation type.');
+      return;
+    }
+    setOrgTypeOtherError('');
     const formData = new FormData();
     formData.set("organisationName", values.organisationName);
-    formData.set("organisationType", values.organisationType);
+    formData.set("organisationType", finalOrgType);
     formData.set("jobTitle", values.jobTitle);
     formData.set("phone", values.phone);
     formData.set("email", values.email);
+    if (values.recoveryEmail) formData.set("recoveryEmail", values.recoveryEmail);
     formData.set("password", values.password);
     formData.set("emailNotifications", emailNotifications ? "true" : "false");
     startTransition(() => dispatch(formData));
@@ -301,6 +345,16 @@ function PartnerForm() {
           ))}
         </select>
         {errors.organisationType && <p className="mt-1.5 text-xs text-red-500">{errors.organisationType.message}</p>}
+        {watchedOrgType === 'Other' && (
+          <input
+            type="text"
+            value={organisationTypeOther}
+            onChange={(e) => { setOrganisationTypeOther(e.target.value); setOrgTypeOtherError(''); }}
+            placeholder="Please specify your organisation type"
+            className="mt-2 w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
+          />
+        )}
+        {orgTypeOtherError && <p className="mt-1.5 text-xs text-red-500">{orgTypeOtherError}</p>}
       </div>
 
       {/* Job Title */}
@@ -324,14 +378,19 @@ function PartnerForm() {
         <label htmlFor="partnerPhone" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
           Phone Number
         </label>
-        <input
-          id="partnerPhone"
-          type="tel"
-          autoComplete="tel"
-          placeholder="e.g. 07700 900000"
-          {...register("phone")}
-          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
-        />
+        <div className="flex border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#FF790E] focus-within:border-transparent transition">
+          <span className="flex items-center px-3 bg-gray-50 text-gray-500 text-sm border-r border-gray-200 select-none flex-shrink-0">
+            +44
+          </span>
+          <input
+            id="partnerPhone"
+            type="tel"
+            autoComplete="tel"
+            placeholder="07700 900000"
+            {...register("phone")}
+            className="flex-1 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
+          />
+        </div>
         {errors.phone && <p className="mt-1.5 text-xs text-red-500">{errors.phone.message}</p>}
       </div>
 
@@ -349,6 +408,23 @@ function PartnerForm() {
           className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
         />
         {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>}
+      </div>
+
+      {/* Recovery Email */}
+      <div>
+        <label htmlFor="partnerRecoveryEmail" className="block text-sm font-semibold text-[#2D1D44] mb-1.5">
+          Recovery email <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <input
+          id="partnerRecoveryEmail"
+          type="email"
+          autoComplete="email"
+          placeholder="backup@example.com"
+          {...register("recoveryEmail")}
+          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF790E] focus:border-transparent transition"
+        />
+        <p className="mt-1 text-xs text-gray-400">Used if you lose access to your main email</p>
+        {errors.recoveryEmail && <p className="mt-1 text-xs text-red-500">{errors.recoveryEmail.message}</p>}
       </div>
 
       {/* Password */}

@@ -3,7 +3,11 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function Hero() {
+interface HeroProps {
+  isLoggedIn?: boolean
+}
+
+export default function Hero({ isLoggedIn = false }: HeroProps) {
   return (
     <section className="relative bg-primary overflow-hidden min-h-[calc(100vh-3.5rem)]">
       {/* Subtle radial depth overlay on far left */}
@@ -29,17 +33,19 @@ export default function Hero() {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            {/* Join Us — white filled, secondary text (prototype bug fix) */}
-            <Link
-              href="/sign-up"
-              className={cn(
-                "inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold",
-                "bg-white text-secondary",
-                "shadow-md hover:bg-white/90 active:scale-95 transition-all duration-200",
-              )}
-            >
-              Join Us
-            </Link>
+            {/* Join Us — hidden for logged-in users */}
+            {!isLoggedIn && (
+              <Link
+                href="/sign-up"
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold",
+                  "bg-white text-secondary",
+                  "shadow-md hover:bg-white/90 active:scale-95 transition-all duration-200",
+                )}
+              >
+                Join Us
+              </Link>
+            )}
 
             {/* Explore Events — white outline */}
             <Link
@@ -76,11 +82,13 @@ export default function Hero() {
             />
           </div>
 
-          {/* Social proof chip */}
-          <div className="absolute bottom-10 right-4 bg-white rounded-xl px-4 py-3 shadow-xl max-w-[210px]">
-            <p className="text-primary text-sm font-bold leading-tight">Join 500+ young people</p>
-            <p className="text-secondary text-xs font-medium mt-0.5">in Your Area</p>
-          </div>
+          {/* Social proof chip — hidden for logged-in users */}
+          {!isLoggedIn && (
+            <div className="absolute bottom-10 right-4 bg-white rounded-xl px-4 py-3 shadow-xl max-w-[210px]">
+              <p className="text-primary text-sm font-bold leading-tight">Join 500+ young people</p>
+              <p className="text-secondary text-xs font-medium mt-0.5">in Your Area</p>
+            </div>
+          )}
         </div>
       </div>
     </section>

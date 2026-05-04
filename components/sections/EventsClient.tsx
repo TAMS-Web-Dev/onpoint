@@ -11,9 +11,9 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns'
-import { Calendar, ChevronDown, MapPin, Search, SearchX, Tag } from 'lucide-react'
+import { Calendar, CalendarX, ChevronDown, MapPin, Search, SearchX, Tag } from 'lucide-react'
 import EventCard from '@/components/shared/EventCard'
-import type { PlaceholderEvent } from '@/lib/placeholder-data'
+import type { EventbriteEvent } from '@/lib/eventbrite'
 
 const CATEGORIES = ['All', 'Workshop', 'Networking', 'Focus Group', 'Education']
 
@@ -37,11 +37,10 @@ const DATE_OPTIONS = [
 ]
 
 interface EventsClientProps {
-  initialEvents: PlaceholderEvent[]
-  isLoggedIn: boolean
+  initialEvents: EventbriteEvent[]
 }
 
-export default function EventsClient({ initialEvents, isLoggedIn }: EventsClientProps) {
+export default function EventsClient({ initialEvents }: EventsClientProps) {
   const [query,          setQuery]          = useState('')
   const [category,       setCategory]       = useState('all')
   const [dateFilter,     setDateFilter]     = useState('all')
@@ -95,6 +94,19 @@ export default function EventsClient({ initialEvents, isLoggedIn }: EventsClient
       return true
     })
   }, [initialEvents, query, category, dateFilter, locationFilter])
+
+  // No events from API at all — show before the filter bar
+  if (initialEvents.length === 0) {
+    return (
+      <div className="mt-16 flex flex-col items-center justify-center py-24 text-center">
+        <CalendarX size={48} className="text-foreground/20 mb-4" />
+        <h3 className="text-secondary font-semibold text-lg">No events available right now</h3>
+        <p className="mt-1.5 text-foreground/50 text-sm max-w-xs">
+          Check back soon - we&apos;re always adding new events and workshops.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-8">
@@ -192,7 +204,7 @@ export default function EventsClient({ initialEvents, isLoggedIn }: EventsClient
       {filteredEvents.length > 0 ? (
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEvents.map((event) => (
-            <EventCard key={event.id} event={event} isLoggedIn={isLoggedIn} />
+            <EventCard key={event.id} event={event} />
           ))}
         </div>
       ) : (

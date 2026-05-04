@@ -73,6 +73,7 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
   }
 
   const emailNotifications = formData.get("emailNotifications") === "true";
+  const recoveryEmail = (formData.get("recoveryEmail") as string) || null;
   const { fullName, email, password, dateOfBirth, phoneNumber, postcode } = result.data;
   const supabase = await createClient();
 
@@ -103,6 +104,7 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
       await service.from("profiles").upsert({
         id: data.user.id,
         email_notifications: emailNotifications,
+        recovery_email: recoveryEmail,
       });
     } catch {
       // non-fatal
@@ -147,6 +149,7 @@ export async function signUpPartner(prevState: AuthState, formData: FormData): P
   }
 
   const emailNotifications = formData.get("emailNotifications") === "true";
+  const recoveryEmail = (formData.get("recoveryEmail") as string) || null;
   const { organisationName, organisationType, jobTitle, phone, email, password } = result.data;
   const supabase = await createClient();
 
@@ -186,6 +189,7 @@ export async function signUpPartner(prevState: AuthState, formData: FormData): P
         job_title: jobTitle,
         phone,
         email_notifications: emailNotifications,
+        recovery_email: recoveryEmail,
       });
     } catch {
       // non-fatal — user_metadata fallback ensures data is available
@@ -203,4 +207,33 @@ export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/");
+}
+
+export async function sendPasswordReset(email: string): Promise<void> {
+  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`
+  try {
+    const supabase = await createClient()
+    // Try the entered email directly — silently no-ops if no account found
+    await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+
+    // Also check if entered email is a recovery email on any profile
+    const service = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data: profile } = await service
+      .from('profiles')
+      .select('id')
+      .eq('recovery_email', email)
+      .maybeSingle()
+
+    if (profile) {
+      const { data: { user } } = await service.auth.admin.getUserById(profile.id)
+      if (user?.email && user.email.toLowerCase() !== email.toLowerCase()) {
+        await supabase.auth.resetPasswordForEmail(user.email, { redirectTo })
+      }
+    }
+  } catch {
+    // Never surface errors — always show generic success to caller
+  }
 }

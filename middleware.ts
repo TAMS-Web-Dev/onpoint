@@ -9,32 +9,6 @@ const SUSPEND_EXEMPT_PREFIXES = ['/admin', '/suspended']
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Redirect logged-in users away from the public home page
-  if (pathname === '/') {
-    const tempResponse = NextResponse.next({ request })
-    const rootSupabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() { return request.cookies.getAll() },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              tempResponse.cookies.set(name, value, options)
-            )
-          },
-        },
-      }
-    )
-    const { data: { user: rootUser } } = await rootSupabase.auth.getUser()
-    if (rootUser) {
-      const communityUrl = request.nextUrl.clone()
-      communityUrl.pathname = '/community'
-      return NextResponse.redirect(communityUrl)
-    }
-    return NextResponse.next()
-  }
-
   const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r))
   if (!isProtected) return NextResponse.next()
 
@@ -118,5 +92,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/chat/:path*', '/admin/:path*', '/private/:path*', '/community/:path*'],
+  matcher: ['/chat/:path*', '/admin/:path*', '/private/:path*', '/community/:path*'],
 }

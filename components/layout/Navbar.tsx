@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Calendar, Home, Menu, MoreHorizontal, User, Users, X } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -16,12 +17,13 @@ const NAV_LINKS = [
 
 interface NavbarProps {
   initials: string | null;
+  avatarUrl: string | null;
 }
 
-export default function Navbar({ initials }: NavbarProps) {
+export default function Navbar({ initials, avatarUrl }: NavbarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const visibleLinks = initials ? NAV_LINKS.filter((l) => l.href !== '/') : NAV_LINKS;
+  const visibleLinks = NAV_LINKS;
 
   return (
     <header className="sticky top-0 z-50 bg-background border-b border-border">
@@ -61,12 +63,13 @@ export default function Navbar({ initials }: NavbarProps) {
         {/* Right side */}
         <div className="flex items-center gap-2">
           {initials ? (
-            <Link
-              href="/more"
-              aria-label="Your account"
-              className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs hover:bg-primary/90 transition-colors flex-shrink-0"
-            >
-              {initials}
+            <Link href="/more" aria-label="Your account" className="flex-shrink-0 hover:opacity-90 transition-opacity">
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={avatarUrl ?? undefined} />
+                <AvatarFallback className="bg-primary text-white font-bold text-xs">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
             </Link>
           ) : (
             <Link
